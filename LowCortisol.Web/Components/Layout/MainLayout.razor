@@ -1,0 +1,50 @@
+﻿@inherits Microsoft.AspNetCore.Components.LayoutComponentBase
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Routing
+@inject NavigationManager Nav
+
+<div class="page-shell">
+    <main class="page-content fade-up">
+        @Body
+    </main>
+
+    <nav class="bottom-nav">
+        <div class="bottom-nav-inner">
+            <a href="/" class="nav-item @(IsActive("/"))">
+                <span style="font-size:22px;">⌂</span>
+                <span>HOME</span>
+            </a>
+
+            <a href="/alerts" class="nav-item @(IsActive("/alerts"))">
+                <span style="font-size:20px;">◌</span>
+                <span>ALERTS</span>
+            </a>
+
+            <a href="/valves" class="nav-item @(IsActive("/valves"))">
+                <span style="font-size:20px;">≡</span>
+                <span>VALVES</span>
+            </a>
+
+            <a href="/profile" class="nav-item @(IsActive("/profile"))">
+                <span style="font-size:20px;">◠</span>
+                <span>PROFILE</span>
+            </a>
+        </div>
+    </nav>
+</div>
+
+@code {
+    private string IsActive(string route)
+    {
+        var current = Nav.ToBaseRelativePath(Nav.Uri);
+        current = "/" + current.Trim('/');
+
+        if (route == "/" && current == "/")
+            return "active";
+
+        if (route != "/" && current.StartsWith(route, StringComparison.OrdinalIgnoreCase))
+            return "active";
+
+        return "";
+    }
+}

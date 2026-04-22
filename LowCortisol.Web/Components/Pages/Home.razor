@@ -1,0 +1,65 @@
+﻿@page "/"
+@rendermode InteractiveServer
+@implements IDisposable
+@inject LowCortisol.Web.Services.AppStateService AppState
+
+<div class="space-y-5">
+    <h1 class="page-title">LOWCORTISOL</h1>
+    <div class="section-divider"></div>
+
+    <div class="soft-card p-5 flex items-center gap-4">
+        <div class="icon-chip bg-chip-green text-2xl">🛡</div>
+        <div>
+            <div class="text-xs font-bold tracking-widest text-gray-500">SYSTEM STATUS</div>
+            <div class="text-2xl font-bold">All systems secure</div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-4">
+        <CircularRing Label="WATER"
+                      Value="@AppState.WaterPercentage"
+                      ValueChanged="OnWaterChanged"
+                      StrokeColor="#1b84f4" />
+
+        <CircularRing Label="GAS"
+                      Value="@AppState.GasPercentage"
+                      ValueChanged="OnGasChanged"
+                      StrokeColor="#ff5a0a" />
+    </div>
+
+    <button class="danger-btn" @onclick="EmergencyOff">
+        ⦿ Emergency shut-off
+    </button>
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        AppState.OnChange += Refresh;
+    }
+
+    private void OnWaterChanged(int value)
+    {
+        AppState.SetWaterPercentage(value);
+    }
+
+    private void OnGasChanged(int value)
+    {
+        AppState.SetGasPercentage(value);
+    }
+
+    private void EmergencyOff()
+    {
+        AppState.EmergencyShutdown();
+    }
+
+    private void Refresh()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        AppState.OnChange -= Refresh;
+    }
+}

@@ -1,0 +1,34 @@
+﻿@page "/alerts"
+
+<div class="space-y-5">
+    <h1 class="page-title">Alerts</h1>
+    <div class="section-divider"></div>
+
+    @foreach (var item in alerts)
+    {
+        <div class="soft-card p-4 flex items-center justify-between gap-4 fade-up">
+            <div class="flex items-center gap-4">
+                <div class="icon-chip @item.IconClass text-xl">@item.Icon</div>
+                <div>
+                    <div class="text-xl font-semibold">@item.Title</div>
+                    <div class="text-base text-gray-500">@item.Description</div>
+                </div>
+            </div>
+            <div class="text-xs tracking-widest text-gray-500 whitespace-nowrap">@item.When</div>
+        </div>
+    }
+</div>
+
+@code {
+    private List<AlertItem> alerts = new()
+    {
+        new("💧", "bg-chip-red", "Water leak detected", "Kitchen sensor · 2.1 L spilled", "2 MIN AGO"),
+        new("🔥", "bg-chip-orange", "Gas pressure low", "Main line at 0.6 bar", "1 H AGO"),
+        new("🔋", "bg-chip-orange", "Sensor battery low", "Bathroom · 12% remaining", "3 H AGO"),
+        new("〰", "bg-chip-blue", "Unusual flow pattern", "Garden valve · 4× normal", "YESTERDAY"),
+        new("◉", "bg-chip-blue", "Device reconnected", "Boiler valve back online", "YESTERDAY"),
+        new("⚠", "bg-chip-blue", "Monthly check due", "Inspection scheduled Friday", "2 DAYS AGO")
+    };
+
+    public record AlertItem(string Icon, string IconClass, string Title, string Description, string When);
+}
