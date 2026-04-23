@@ -1,3 +1,6 @@
+using LowCortisol.Application.Services;
+using LowCortisol.Domain.Interfaces;
+using LowCortisol.Infrastructure.Repositories;
 using LowCortisol.Web.Auth;
 using LowCortisol.Web.Services;
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
@@ -17,6 +20,10 @@ builder.Services.AddScoped<AuthService>();
 
 builder.Services.AddScoped<AppStateService>();
 builder.Services.AddScoped<I18nService>();
+
+builder.Services.AddScoped<IDeviceRepository, DeviceRepository>();
+
+builder.Services.AddScoped<DeviceService>();
 
 var app = builder.Build();
 
