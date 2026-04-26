@@ -27,4 +27,8 @@
       <Folder Include="ViewModels\" />
     </ItemGroup>
 
+    <ItemGroup>
+      <_ContentIncludedByDefault Remove="wwwroot\js\circularRing.js" />
+    </ItemGroup>
+
 </Project>
