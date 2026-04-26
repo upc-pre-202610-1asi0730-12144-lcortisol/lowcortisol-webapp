@@ -14,6 +14,7 @@ using LowCortisol.Infrastructure.Persistence.Repositories;
 using LowCortisol.Infrastructure.Security;
 using LowCortisol.Presentation.Components;
 using LowCortisol.Presentation.Services;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -21,6 +22,19 @@ var builder = WebApplication.CreateBuilder(args);
 // Razor Components
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+// Forwarded headers for Render / reverse proxy
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders =
+        ForwardedHeaders.XForwardedFor |
+        ForwardedHeaders.XForwardedProto |
+        ForwardedHeaders.XForwardedHost;
+
+    // Accept forwarded headers from the proxy/load balancer
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 
 // DbContext
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -59,6 +73,9 @@ builder.Services.AddScoped<I18nService>();
 
 var app = builder.Build();
 
+// Respect proxy headers BEFORE redirects/routing
+app.UseForwardedHeaders();
+
 // Database migrations on startup
 using (var scope = app.Services.CreateScope())
 {
@@ -72,11 +89,10 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
+// On Render this is usually fine once forwarded headers are enabled
 app.UseHttpsRedirection();
 
-// IMPORTANTE para CSS, JS, JSON, etc.
 app.UseStaticFiles();
-
 app.UseAntiforgery();
 
 app.MapRazorComponents<App>()
