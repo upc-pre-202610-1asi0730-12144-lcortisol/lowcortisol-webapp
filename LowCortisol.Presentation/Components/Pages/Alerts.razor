@@ -1,0 +1,437 @@
+﻿@page "/alerts"
+@implements IDisposable
+@rendermode InteractiveServer
+@inject LowCortisol.Application.Contexts.IdentityAccess.Services.IIdentityAccessService IdentityAccessService
+@inject LowCortisol.Infrastructure.Security.CurrentUserSession CurrentUserSession
+@inject LowCortisol.Presentation.Services.BrowserSessionService BrowserSession
+@inject LowCortisol.Application.Contexts.IncidentManagement.Services.IIncidentManagementService IncidentManagementService
+@inject LowCortisol.Application.Contexts.DeviceManagement.Services.IDeviceManagementService DeviceManagementService
+@inject LowCortisol.Presentation.Services.UiSessionService Session
+@inject LowCortisol.Presentation.Services.I18nService I18n
+@inject NavigationManager Nav
+
+@if (isLoadingPage)
+{
+    <div class="soft-card section-card">
+        <h1 class="page-title">@I18n["common.loading"]</h1>
+    </div>
+}
+else if (!string.IsNullOrWhiteSpace(fatalError))
+{
+    <div class="soft-card section-card">
+        <h1 class="page-title">@I18n["alerts.title"]</h1>
+        <div class="error-box">@fatalError</div>
+    </div>
+}
+else
+{
+    <div>
+        <div class="page-header-row">
+            <div>
+                <h1 class="page-title">@I18n["alerts.title"]</h1>
+                <p class="page-subtitle">@I18n["alerts.subtitle"]</p>
+            </div>
+
+            <button class="primary-btn page-header-btn" @onclick="OpenCreatePanel">
+                @I18n["alerts.create"]
+            </button>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(errorMessage))
+        {
+            <div class="error-box">@errorMessage</div>
+        }
+
+        @if (showCreatePanel)
+        {
+            <div class="soft-card section-card create-panel">
+                <h2 class="section-heading">@I18n["alerts.createTitle"]</h2>
+
+                <div class="form-grid">
+                    <div class="auth-field">
+                        <label class="auth-label">@I18n["alerts.device"]</label>
+                        <select class="auth-select" @bind="selectedDeviceId">
+                            <option value="">@I18n["alerts.selectDevice"]</option>
+                            @foreach (var device in devices)
+                            {
+                                <option value="@device.Id">@device.Name (@device.Location)</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="auth-field">
+                        <label class="auth-label">@I18n["alerts.severity"]</label>
+                        <select class="auth-select" @bind="newSeverity">
+                            <option value="Low">Low</option>
+                            <option value="Medium">Medium</option>
+                            <option value="High">High</option>
+                            <option value="Critical">Critical</option>
+                        </select>
+                    </div>
+
+                    <div class="auth-field desktop-span-12">
+                        <label class="auth-label">@I18n["common.description"]</label>
+                        <textarea class="auth-textarea" @bind="newDescription" @bind:event="oninput" placeholder="@I18n["alerts.descriptionPlaceholder"]"></textarea>
+                    </div>
+                </div>
+
+                <div class="panel-actions">
+                    <button class="secondary-btn" @onclick="CloseCreatePanel">@I18n["common.cancel"]</button>
+                    <button class="primary-btn panel-primary" @onclick="CreateIncidentAsync">@I18n["alerts.saveIncident"]</button>
+                </div>
+            </div>
+        }
+
+        <div class="alerts-grid">
+            <div class="soft-card section-card desktop-span-4">
+                <h2 class="section-heading">@I18n["common.summary"]</h2>
+                <div class="data-list">
+                    <div class="data-row">
+                        <span>@I18n["alerts.totalIncidents"]</span>
+                        <strong>@incidents.Count</strong>
+                    </div>
+                    <div class="data-row">
+                        <span>@I18n["alerts.openAssigned"]</span>
+                        <strong>@incidents.Count(x => x.Status is "Open" or "Assigned")</strong>
+                    </div>
+                    <div class="data-row">
+                        <span>@I18n["alerts.critical"]</span>
+                        <strong>@incidents.Count(x => x.Severity == "Critical")</strong>
+                    </div>
+                    <div class="data-row">
+                        <span>@I18n["alerts.resolvedClosed"]</span>
+                        <strong>@incidents.Count(x => x.Status is "Resolved" or "Closed")</strong>
+                    </div>
+                </div>
+            </div>
+
+            <div class="soft-card section-card desktop-span-8">
+                <h2 class="section-heading">@I18n["alerts.incidentBoard"]</h2>
+
+                @if (incidents.Count == 0)
+                {
+                    <p class="page-subtitle">@I18n["alerts.noIncidents"]</p>
+                }
+                else
+                {
+                    <div class="incident-list">
+                        @foreach (var incident in incidents)
+                        {
+                            <div class="incident-card">
+                                <div class="incident-card-top">
+                                    <div>
+                                        <h3 class="incident-title">@incident.Description</h3>
+                                        <p class="incident-meta">@I18n["alerts.device"]: @incident.DeviceId</p>
+                                    </div>
+
+                                    <div class="incident-badges">
+                                        <span class="@GetSeverityClass(incident.Severity)">@TranslateSeverity(incident.Severity)</span>
+                                        <span class="@GetStatusClass(incident.Status)">@TranslateIncidentStatus(incident.Status)</span>
+                                    </div>
+                                </div>
+
+                                <div class="incident-details">
+                                    <div><strong>@I18n["common.created"]:</strong> @incident.CreatedAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</div>
+                                    <div><strong>@I18n["alerts.reportedBy"]:</strong> @incident.ReportedByUserId</div>
+                                    <div><strong>@I18n["alerts.assignedTo"]:</strong> @(incident.AssignedUserId?.ToString() ?? I18n["alerts.unassigned"])</div>
+                                </div>
+
+                                <div class="incident-actions">
+                                    @if (incident.Status == "Open")
+                                    {
+                                        <button class="secondary-btn" @onclick="() => AssignToCurrentUserAsync(incident.Id)">
+                                            @I18n["alerts.assignToMe"]
+                                        </button>
+                                    }
+
+                                    @if (incident.Status == "Assigned")
+                                    {
+                                        <button class="secondary-btn" @onclick='() => UpdateStatusAsync(incident.Id, "InProgress", "Work started from dashboard.")'>
+                                            @I18n["alerts.startWork"]
+                                        </button>
+                                    }
+
+                                    @if (incident.Status == "InProgress")
+                                    {
+                                        <button class="secondary-btn" @onclick='() => UpdateStatusAsync(incident.Id, "Resolved", "Incident resolved from dashboard.")'>
+                                            @I18n["alerts.resolve"]
+                                        </button>
+                                    }
+
+                                    @if (incident.Status == "Resolved")
+                                    {
+                                        <button class="secondary-btn" @onclick='() => UpdateStatusAsync(incident.Id, "Closed", "Incident closed from dashboard.")'>
+                                            @I18n["alerts.closeIncident"]
+                                        </button>
+                                    }
+                                </div>
+
+                                @if (incident.History.Count > 0)
+                                {
+                                    <div class="incident-history">
+                                        @foreach (var entry in incident.History.TakeLast(3))
+                                        {
+                                            <div class="incident-history-item">@entry</div>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<LowCortisol.Application.Contexts.IncidentManagement.DTOs.IncidentDto> incidents = new();
+    private List<LowCortisol.Application.Contexts.DeviceManagement.DTOs.DeviceDto> devices = new();
+
+    private bool showCreatePanel;
+    private bool isSubmitting;
+    private string errorMessage = string.Empty;
+    private string fatalError = string.Empty;
+    private bool _checkedSession;
+    private bool isLoadingPage = true;
+
+    private string selectedDeviceId = string.Empty;
+    private string newSeverity = "Medium";
+    private string newDescription = string.Empty;
+
+    protected override void OnInitialized()
+    {
+        I18n.OnChange += RefreshLanguage;
+    }
+
+    private void RefreshLanguage()
+    {
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        I18n.OnChange -= RefreshLanguage;
+    }
+    
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || _checkedSession)
+            return;
+
+        _checkedSession = true;
+
+        try
+        {
+            if (!Session.IsAuthenticated || Session.CurrentUser is null)
+            {
+                var storedUserId = await BrowserSession.GetUserIdAsync();
+
+                if (storedUserId is null)
+                {
+                    Nav.NavigateTo("/", forceLoad: true);
+                    return;
+                }
+
+                var user = await IdentityAccessService.GetByIdAsync(storedUserId.Value);
+
+                if (user is null)
+                {
+                    await BrowserSession.ClearAsync();
+                    Nav.NavigateTo("/", forceLoad: true);
+                    return;
+                }
+
+                CurrentUserSession.SignIn(user.Id);
+                Session.SignIn(user);
+            }
+
+            await LoadDevicesAsync();
+            await LoadIncidentsAsync();
+        }
+        catch (Exception ex)
+        {
+            fatalError = ex.Message;
+        }
+        finally
+        {
+            isLoadingPage = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task LoadDevicesAsync()
+    {
+        if (Session.CurrentUser is null)
+            return;
+
+        var result = await DeviceManagementService.GetByOwnerAsync(Session.CurrentUser.Id);
+        devices = result.ToList();
+    }
+
+    private async Task LoadIncidentsAsync()
+    {
+        incidents.Clear();
+
+        if (devices.Count == 0)
+            return;
+
+        foreach (var device in devices)
+        {
+            var byDevice = await IncidentManagementService.GetByDeviceAsync(device.Id);
+            incidents.AddRange(byDevice);
+        }
+
+        incidents = incidents
+            .OrderByDescending(x => x.CreatedAtUtc)
+            .DistinctBy(x => x.Id)
+            .ToList();
+    }
+
+    private void OpenCreatePanel()
+    {
+        ResetCreateForm();
+        showCreatePanel = true;
+    }
+
+    private void CloseCreatePanel()
+    {
+        showCreatePanel = false;
+        errorMessage = string.Empty;
+    }
+
+    private async Task CreateIncidentAsync()
+    {
+        if (Session.CurrentUser is null || isSubmitting)
+            return;
+
+        isSubmitting = true;
+        errorMessage = string.Empty;
+
+        if (!Guid.TryParse(selectedDeviceId, out var deviceId))
+        {
+            errorMessage = I18n["alerts.selectDevice"];
+            isSubmitting = false;
+            return;
+        }
+
+        var result = await IncidentManagementService.CreateAsync(
+            new LowCortisol.Application.Contexts.IncidentManagement.Commands.CreateIncidentCommand
+            {
+                DeviceId = deviceId,
+                ReportedByUserId = Session.CurrentUser.Id,
+                Severity = newSeverity,
+                Description = newDescription
+            });
+
+        if (!result.Success)
+        {
+            errorMessage = string.IsNullOrWhiteSpace(result.Error)
+                ? "Unable to create incident."
+                : result.Error;
+
+            isSubmitting = false;
+            return;
+        }
+
+        showCreatePanel = false;
+        ResetCreateForm();
+        await LoadIncidentsAsync();
+        isSubmitting = false;
+    }
+
+    private async Task AssignToCurrentUserAsync(Guid incidentId)
+    {
+        if (Session.CurrentUser is null)
+            return;
+
+        var result = await IncidentManagementService.AssignAsync(
+            new LowCortisol.Application.Contexts.IncidentManagement.Commands.AssignIncidentCommand
+            {
+                IncidentId = incidentId,
+                AssignedUserId = Session.CurrentUser.Id
+            });
+
+        if (!result.Success)
+        {
+            errorMessage = result.Error;
+            return;
+        }
+
+        await LoadIncidentsAsync();
+    }
+
+    private async Task UpdateStatusAsync(Guid incidentId, string status, string note)
+    {
+        var result = await IncidentManagementService.UpdateStatusAsync(
+            new LowCortisol.Application.Contexts.IncidentManagement.Commands.UpdateIncidentStatusCommand
+            {
+                IncidentId = incidentId,
+                Status = status,
+                Note = note
+            });
+
+        if (!result.Success)
+        {
+            errorMessage = result.Error;
+            return;
+        }
+
+        await LoadIncidentsAsync();
+    }
+
+    private string TranslateSeverity(string severity)
+    {
+        return severity switch
+        {
+            "High" => I18n["status.high"],
+            "Critical" => I18n["status.critical"],
+            _ => severity
+        };
+    }
+
+    private string TranslateIncidentStatus(string status)
+    {
+        return status switch
+        {
+            "Open" => I18n["status.open"],
+            "Assigned" => I18n["status.assigned"],
+            "InProgress" => I18n["status.inProgress"],
+            "Resolved" => I18n["status.resolved"],
+            "Closed" => I18n["status.closed"],
+            _ => status
+        };
+    }
+
+    private void ResetCreateForm()
+    {
+        selectedDeviceId = string.Empty;
+        newSeverity = "Medium";
+        newDescription = string.Empty;
+    }
+
+    private static string GetSeverityClass(string severity)
+    {
+        return severity switch
+        {
+            "Low" => "status-pill status-ok",
+            "Medium" => "status-pill status-pending",
+            "High" => "status-pill status-high",
+            "Critical" => "status-pill status-critical",
+            _ => "status-pill"
+        };
+    }
+
+    private static string GetStatusClass(string status)
+    {
+        return status switch
+        {
+            "Open" => "status-pill status-pending",
+            "Assigned" => "status-pill status-high",
+            "InProgress" => "status-pill status-high",
+            "Resolved" => "status-pill status-ok",
+            "Closed" => "status-pill status-ok",
+            _ => "status-pill"
+        };
+    }
+}
