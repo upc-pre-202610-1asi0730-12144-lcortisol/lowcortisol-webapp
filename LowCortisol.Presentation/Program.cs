@@ -71,6 +71,11 @@ builder.Services.AddScoped<BrowserSessionService>();
 builder.Services.AddScoped<UiSessionService>();
 builder.Services.AddScoped<I18nService>();
 
+builder.Services.Configure<Microsoft.AspNetCore.Components.Server.CircuitOptions>(options =>
+{
+    options.DetailedErrors = true;
+});
+
 var app = builder.Build();
 
 // Respect proxy headers BEFORE redirects/routing
