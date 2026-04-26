@@ -23,7 +23,7 @@
             <input class="auth-input"
                    @bind="email"
                    @bind:event="oninput"
-                   placeholder="you@example.com" />
+                   placeholder="@I18n["auth.login.emailPlaceholder"]" />
         </div>
 
         <div class="auth-field">
@@ -32,7 +32,7 @@
                    type="password"
                    @bind="password"
                    @bind:event="oninput"
-                   placeholder="••••••••" />
+                   placeholder="@I18n["auth.login.passwordPlaceholder"]" />
         </div>
 
         <button class="primary-btn" @onclick="SignInAsync">

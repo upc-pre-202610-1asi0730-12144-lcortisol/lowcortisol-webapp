@@ -33,6 +33,12 @@
   "auth.phone": "PHONE",
   "auth.accountType": "ACCOUNT TYPE",
   "auth.back": "Back to sign in",
+  "auth.login.emailPlaceholder": "email@example.com",
+  "auth.login.passwordPlaceholder": "Enter your password",
+  "auth.register.namePlaceholder": "Enter your full name",
+  "auth.register.emailPlaceholder": "email@example.com",
+  "auth.register.phonePlaceholder": "Enter your phone number",
+  "auth.register.passwordPlaceholder": "Create a password",
 
   "home.title": "Dashboard",
   "home.welcome": "Welcome back",

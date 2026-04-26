@@ -23,7 +23,7 @@
             <input class="auth-input"
                    @bind="name"
                    @bind:event="oninput"
-                   placeholder="Jean Franck Loa Rojas" />
+                   placeholder="@I18n["auth.register.namePlaceholder"]" />
         </div>
 
         <div class="auth-field">
@@ -31,7 +31,7 @@
             <input class="auth-input"
                    @bind="email"
                    @bind:event="oninput"
-                   placeholder="you@example.com" />
+                   placeholder="@I18n["auth.register.emailPlaceholder"]" />
         </div>
 
         <div class="auth-field">
@@ -39,7 +39,7 @@
             <input class="auth-input"
                    @bind="phone"
                    @bind:event="oninput"
-                   placeholder="+51 999 999 999" />
+                   placeholder="@I18n["auth.register.phonePlaceholder"]" />
         </div>
 
         <div class="auth-field">
@@ -48,7 +48,7 @@
                    type="password"
                    @bind="password"
                    @bind:event="oninput"
-                   placeholder="Create a password" />
+                   placeholder="@I18n["auth.register.passwordPlaceholder"]" />
         </div>
 
         <div class="auth-field">
