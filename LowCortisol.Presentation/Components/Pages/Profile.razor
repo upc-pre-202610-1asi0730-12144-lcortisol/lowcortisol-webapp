@@ -1,0 +1,199 @@
+﻿@page "/profile"
+@implements IDisposable
+@rendermode InteractiveServer
+@inject LowCortisol.Application.Contexts.IdentityAccess.Services.IIdentityAccessService IdentityAccessService
+@inject LowCortisol.Infrastructure.Security.CurrentUserSession CurrentUserSession
+@inject LowCortisol.Presentation.Services.BrowserSessionService BrowserSession
+@inject LowCortisol.Presentation.Services.UiSessionService Session
+@inject LowCortisol.Presentation.Services.I18nService I18n
+@inject NavigationManager Nav
+
+@if (!Session.IsAuthenticated || Session.CurrentUser is null)
+{
+    <div class="soft-card section-card">
+        <h1 class="page-title">@I18n["common.loading"]</h1>
+    </div>
+}
+else
+{
+    <div>
+        <h1 class="page-title">@I18n["profile.title"]</h1>
+        <p class="page-subtitle">@I18n["profile.subtitle"]</p>
+
+        <div class="profile-grid">
+            <div class="soft-card section-card desktop-span-4 profile-hero-card">
+                <div class="profile-avatar">
+                    @GetInitials(Session.CurrentUser.Name)
+                </div>
+
+                <h2 class="profile-name">@Session.CurrentUser.Name</h2>
+                <p class="profile-email">@Session.CurrentUser.Email</p>
+
+                <div class="profile-role-badge">
+                    @TranslateRole(Session.CurrentUser.Role)
+                </div>
+
+                <button class="primary-btn profile-signout-btn" @onclick="SignOut">
+                    @I18n["profile.signout"]
+                </button>
+            </div>
+
+            <div class="soft-card section-card desktop-span-8">
+                <h2 class="section-heading">@I18n["profile.accountOverview"]</h2>
+
+                <div class="data-list">
+                    <div class="data-row">
+                        <span>@I18n["profile.fullName"]</span>
+                        <strong>@Session.CurrentUser.Name</strong>
+                    </div>
+                    <div class="data-row">
+                        <span>@I18n["profile.email"]</span>
+                        <strong>@Session.CurrentUser.Email</strong>
+                    </div>
+                    <div class="data-row">
+                        <span>@I18n["profile.phone"]</span>
+                        <strong>@(string.IsNullOrWhiteSpace(Session.CurrentUser.Phone) ? I18n["profile.notProvided"] : Session.CurrentUser.Phone)</strong>
+                    </div>
+                    <div class="data-row">
+                        <span>@I18n["profile.role"]</span>
+                        <strong>@TranslateRole(Session.CurrentUser.Role)</strong>
+                    </div>
+                    <div class="data-row">
+                        <span>@I18n["profile.status"]</span>
+                        <strong>@(Session.CurrentUser.IsActive ? I18n["profile.active"] : I18n["profile.inactive"])</strong>
+                    </div>
+                </div>
+            </div>
+
+            <div class="soft-card section-card desktop-span-4 profile-shortcut-card">
+                <h2 class="section-heading">@I18n["profile.shortcuts"]</h2>
+                <div class="data-list">
+                    <a class="quick-action-btn" href="/devices">@I18n["profile.goDevices"]</a>
+                    <a class="quick-action-btn" href="/reports">@I18n["profile.goReports"]</a>
+                    <a class="quick-action-btn" href="/alerts">@I18n["profile.goAlerts"]</a>
+                    <a class="quick-action-btn" href="/home">@I18n["profile.goDashboard"]</a>
+                </div>
+            </div>
+
+            <div class="soft-card section-card desktop-span-8">
+                <h2 class="section-heading">@I18n["profile.workspaceDetails"]</h2>
+
+                <div class="profile-info-grid">
+                    <div class="profile-info-card">
+                        <span class="profile-info-label">@I18n["profile.environment"]</span>
+                        <strong>LowCortisol Monitoring Workspace</strong>
+                    </div>
+
+                    <div class="profile-info-card">
+                        <span class="profile-info-label">@I18n["profile.permissions"]</span>
+                        <strong>@GetPermissionSummary(Session.CurrentUser.Role)</strong>
+                    </div>
+
+                    <div class="profile-info-card">
+                        <span class="profile-info-label">@I18n["profile.sessionState"]</span>
+                        <strong>@I18n["profile.authenticated"]</strong>
+                    </div>
+
+                    <div class="profile-info-card">
+                        <span class="profile-info-label">@I18n["profile.preferredLanguage"]</span>
+                        <strong>@I18n.CurrentLanguage.ToUpperInvariant()</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private bool _checkedSession;
+
+    protected override void OnInitialized()
+    {
+        I18n.OnChange += RefreshLanguage;
+    }
+
+    private void RefreshLanguage()
+    {
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        I18n.OnChange -= RefreshLanguage;
+    }
+    
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || _checkedSession)
+            return;
+
+        _checkedSession = true;
+
+        if (!Session.IsAuthenticated || Session.CurrentUser is null)
+        {
+            var storedUserId = await BrowserSession.GetUserIdAsync();
+
+            if (storedUserId is null)
+            {
+                Nav.NavigateTo("/", forceLoad: true);
+                return;
+            }
+
+            var user = await IdentityAccessService.GetByIdAsync(storedUserId.Value);
+
+            if (user is null)
+            {
+                await BrowserSession.ClearAsync();
+                Nav.NavigateTo("/", forceLoad: true);
+                return;
+            }
+
+            CurrentUserSession.SignIn(user.Id);
+            Session.SignIn(user);
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task SignOut()
+    {
+        CurrentUserSession.SignOut();
+        Session.SignOut();
+        await BrowserSession.ClearAsync();
+        Nav.NavigateTo("/", forceLoad: true);
+    }
+
+    private string TranslateRole(string role)
+    {
+        return role switch
+        {
+            "Homeowner" => I18n["profile.homeowner"],
+            "Admin" => I18n["profile.admin"],
+            "Technician" => I18n["profile.technician"],
+            _ => role
+        };
+    }
+
+    private string GetPermissionSummary(string role)
+    {
+        return role switch
+        {
+            "Admin" => I18n["profile.adminAccess"],
+            "Technician" => I18n["profile.technicianAccess"],
+            "Homeowner" => I18n["profile.homeownerAccess"],
+            _ => I18n["profile.standardAccess"]
+        };
+    }
+
+    private static string GetInitials(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            return "U";
+
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 1)
+            return parts[0][0].ToString().ToUpperInvariant();
+
+        return $"{char.ToUpperInvariant(parts[0][0])}{char.ToUpperInvariant(parts[1][0])}";
+    }
+}

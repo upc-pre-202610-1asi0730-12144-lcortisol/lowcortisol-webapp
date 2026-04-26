@@ -1,0 +1,407 @@
+﻿@page "/reports"
+@implements IDisposable
+@rendermode InteractiveServer
+@inject LowCortisol.Application.Contexts.IdentityAccess.Services.IIdentityAccessService IdentityAccessService
+@inject LowCortisol.Infrastructure.Security.CurrentUserSession CurrentUserSession
+@inject LowCortisol.Presentation.Services.BrowserSessionService BrowserSession
+@inject LowCortisol.Application.Contexts.Reporting.Services.IReportingService ReportingService
+@inject LowCortisol.Presentation.Services.UiSessionService Session
+@inject LowCortisol.Presentation.Services.I18nService I18n
+@inject NavigationManager Nav
+
+@if (isLoadingPage)
+{
+    <div class="soft-card section-card">
+        <h1 class="page-title">@I18n["common.loading"]</h1>
+    </div>
+}
+else if (!string.IsNullOrWhiteSpace(fatalError))
+{
+    <div class="soft-card section-card">
+        <h1 class="page-title">@I18n["reports.title"]</h1>
+        <div class="error-box">@fatalError</div>
+    </div>
+}
+else
+{
+    <div>
+        <div class="page-header-row">
+            <div>
+                <h1 class="page-title">@I18n["reports.title"]</h1>
+                <p class="page-subtitle">@I18n["reports.subtitle"]</p>
+            </div>
+
+            <button class="primary-btn page-header-btn" @onclick="OpenGeneratePanel">
+                @I18n["reports.generate"]
+            </button>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(errorMessage))
+        {
+            <div class="error-box">@errorMessage</div>
+        }
+
+        @if (showGeneratePanel)
+        {
+            <div class="soft-card section-card create-panel">
+                <h2 class="section-heading">@I18n["reports.generateTitle"]</h2>
+
+                <div class="form-grid">
+                    <div class="auth-field">
+                        <label class="auth-label">@I18n["common.period"]</label>
+                        <select class="auth-select" @bind="newPeriod">
+                            <option value="7D">7D</option>
+                            <option value="30D">30D</option>
+                            <option value="90D">90D</option>
+                        </select>
+                    </div>
+
+                    <div class="auth-field">
+                        <label class="auth-label">@I18n["reports.totalWater"]</label>
+                        <input class="auth-input" type="number" step="0.1" @bind="newWaterTotal" />
+                    </div>
+
+                    <div class="auth-field">
+                        <label class="auth-label">@I18n["reports.waterUnit"]</label>
+                        <input class="auth-input" @bind="newWaterUnit" @bind:event="oninput" placeholder="L" />
+                    </div>
+
+                    <div class="auth-field">
+                        <label class="auth-label">@I18n["reports.totalGas"]</label>
+                        <input class="auth-input" type="number" step="0.1" @bind="newGasTotal" />
+                    </div>
+
+                    <div class="auth-field">
+                        <label class="auth-label">@I18n["reports.gasUnit"]</label>
+                        <input class="auth-input" @bind="newGasUnit" @bind:event="oninput" placeholder="m3" />
+                    </div>
+                </div>
+
+                <div class="panel-actions">
+                    <button class="secondary-btn" @onclick="CloseGeneratePanel">@I18n["common.cancel"]</button>
+                    <button class="primary-btn panel-primary" @onclick="GenerateReportAsync">@I18n["reports.saveReport"]</button>
+                </div>
+            </div>
+        }
+
+        <div class="reports-grid">
+            <div class="soft-card section-card desktop-span-4 report-summary-card">
+                <h2 class="section-heading">@I18n["common.summary"]</h2>
+                <div class="data-list">
+                    <div class="data-row">
+                        <span>@I18n["reports.generatedReports"]</span>
+                        <strong>@reports.Count</strong>
+                    </div>
+                    <div class="data-row">
+                        <span>@I18n["reports.selectedPeriod"]</span>
+                        <strong>@selectedPeriod</strong>
+                    </div>
+                    <div class="data-row">
+                        <span>@I18n["reports.waterTotal"]</span>
+                        <strong>@GetTotalWater()</strong>
+                    </div>
+                    <div class="data-row">
+                        <span>@I18n["reports.gasTotal"]</span>
+                        <strong>@GetTotalGas()</strong>
+                    </div>
+                </div>
+            </div>
+
+            <div class="soft-card section-card desktop-span-8 report-chart-card">
+                <div class="report-chart-header">
+                    <h2 class="section-heading">@I18n["reports.trend"]</h2>
+
+                    <div class="report-period-switch">
+                        <button class="@GetPeriodButtonClass("7D")" @onclick='() => SelectPeriodAsync("7D")'>7D</button>
+                        <button class="@GetPeriodButtonClass("30D")" @onclick='() => SelectPeriodAsync("30D")'>30D</button>
+                        <button class="@GetPeriodButtonClass("90D")" @onclick='() => SelectPeriodAsync("90D")'>90D</button>
+                    </div>
+                </div>
+
+                <div class="report-bars dual-report-bars">
+                    @foreach (var bar in BuildBars())
+                    {
+                        <div class="report-bar-item dual-bar-item">
+                            <div class="report-bar-label">@bar.Label</div>
+
+                            <div class="dual-bar-group">
+                                <div class="dual-bar-column">
+                                    <div class="report-bar-track water-track">
+                                        <div class="report-bar-fill water-fill" style="height:@($"{bar.WaterHeight}%")"></div>
+                                    </div>
+                                    <div class="mini-bar-caption">@I18n["home.water"]</div>
+                                    <div class="report-bar-value">@bar.WaterValueText</div>
+                                </div>
+
+                                <div class="dual-bar-column">
+                                    <div class="report-bar-track gas-track">
+                                        <div class="report-bar-fill gas-fill" style="height:@($"{bar.GasHeight}%")"></div>
+                                    </div>
+                                    <div class="mini-bar-caption">@I18n["home.gas"]</div>
+                                    <div class="report-bar-value">@bar.GasValueText</div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="soft-card section-card desktop-span-12">
+                <h2 class="section-heading">@I18n["reports.generatedReports"]</h2>
+
+                @if (reports.Count == 0)
+                {
+                    <p class="page-subtitle">@I18n["reports.noReports"]</p>
+                }
+                else
+                {
+                    <div class="report-table-wrap">
+                        <table class="report-table">
+                            <thead>
+                            <tr>
+                                <th>@I18n["common.period"]</th>
+                                <th>@I18n["home.water"]</th>
+                                <th>@I18n["home.gas"]</th>
+                                <th>@I18n["common.generated"]</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            @foreach (var report in reports)
+                            {
+                                <tr>
+                                    <td>@report.Period</td>
+                                    <td>@($"{report.TotalWaterConsumption} {report.TotalWaterUnit}")</td>
+                                    <td>@($"{report.TotalGasConsumption} {report.TotalGasUnit}")</td>
+                                    <td>@report.GeneratedAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td>
+                                </tr>
+                            }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<LowCortisol.Application.Contexts.Reporting.DTOs.ConsumptionReportDto> reports = new();
+    private bool showGeneratePanel;
+    private bool isSubmitting;
+    private string errorMessage = string.Empty;
+    private string fatalError = string.Empty;
+    private string selectedPeriod = "7D";
+    private bool _checkedSession;
+    private bool isLoadingPage = true;
+
+    private string newPeriod = "7D";
+    private decimal newWaterTotal;
+    private string newWaterUnit = "L";
+    private decimal newGasTotal;
+    private string newGasUnit = "m3";
+
+    protected override void OnInitialized()
+    {
+        I18n.OnChange += RefreshLanguage;
+    }
+
+    private void RefreshLanguage()
+    {
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        I18n.OnChange -= RefreshLanguage;
+    }
+    
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || _checkedSession)
+            return;
+
+        _checkedSession = true;
+
+        try
+        {
+            if (!Session.IsAuthenticated || Session.CurrentUser is null)
+            {
+                var storedUserId = await BrowserSession.GetUserIdAsync();
+
+                if (storedUserId is null)
+                {
+                    Nav.NavigateTo("/", forceLoad: true);
+                    return;
+                }
+
+                var user = await IdentityAccessService.GetByIdAsync(storedUserId.Value);
+
+                if (user is null)
+                {
+                    await BrowserSession.ClearAsync();
+                    Nav.NavigateTo("/", forceLoad: true);
+                    return;
+                }
+
+                CurrentUserSession.SignIn(user.Id);
+                Session.SignIn(user);
+            }
+
+            await LoadReportsAsync();
+        }
+        catch (Exception ex)
+        {
+            fatalError = ex.Message;
+        }
+        finally
+        {
+            isLoadingPage = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task LoadReportsAsync()
+    {
+        if (Session.CurrentUser is null)
+            return;
+
+        var result = await ReportingService.GetByOwnerAsync(Session.CurrentUser.Id);
+        reports = result.OrderByDescending(x => x.GeneratedAtUtc).ToList();
+    }
+
+    private void OpenGeneratePanel()
+    {
+        ResetGenerateForm();
+        showGeneratePanel = true;
+    }
+
+    private void CloseGeneratePanel()
+    {
+        showGeneratePanel = false;
+        errorMessage = string.Empty;
+    }
+
+    private async Task GenerateReportAsync()
+    {
+        if (Session.CurrentUser is null || isSubmitting)
+            return;
+
+        isSubmitting = true;
+        errorMessage = string.Empty;
+
+        var result = await ReportingService.GenerateAsync(
+            new LowCortisol.Application.Contexts.Reporting.Commands.GenerateConsumptionReportCommand
+            {
+                OwnerUserId = Session.CurrentUser.Id,
+                Period = newPeriod,
+                TotalWaterConsumption = newWaterTotal,
+                TotalWaterUnit = newWaterUnit,
+                TotalGasConsumption = newGasTotal,
+                TotalGasUnit = newGasUnit
+            });
+
+        if (!result.Success)
+        {
+            errorMessage = string.IsNullOrWhiteSpace(result.Error)
+                ? "Unable to generate report."
+                : result.Error;
+
+            isSubmitting = false;
+            return;
+        }
+
+        showGeneratePanel = false;
+        ResetGenerateForm();
+        await LoadReportsAsync();
+        await SelectPeriodAsync(selectedPeriod);
+        isSubmitting = false;
+    }
+
+    private async Task SelectPeriodAsync(string period)
+    {
+        selectedPeriod = period;
+
+        if (Session.CurrentUser is null)
+            return;
+
+        var result = await ReportingService.GetByOwnerAndPeriodAsync(Session.CurrentUser.Id, period);
+        reports = result.OrderByDescending(x => x.GeneratedAtUtc).ToList();
+    }
+
+    private string GetTotalWater()
+    {
+        if (reports.Count == 0)
+            return "0";
+
+        var total = reports.Sum(x => x.TotalWaterConsumption);
+        var unit = reports.FirstOrDefault()?.TotalWaterUnit ?? "L";
+        return $"{total} {unit}";
+    }
+
+    private string GetTotalGas()
+    {
+        if (reports.Count == 0)
+            return "0";
+
+        var total = reports.Sum(x => x.TotalGasConsumption);
+        var unit = reports.FirstOrDefault()?.TotalGasUnit ?? "m3";
+        return $"{total} {unit}";
+    }
+
+    private IEnumerable<ChartBarVm> BuildBars()
+    {
+        if (reports.Count == 0)
+        {
+            return new[]
+            {
+                new ChartBarVm("A", 18, 12, "0", "0"),
+                new ChartBarVm("B", 28, 22, "0", "0"),
+                new ChartBarVm("C", 14, 30, "0", "0"),
+                new ChartBarVm("D", 32, 20, "0", "0"),
+                new ChartBarVm("E", 20, 26, "0", "0")
+            };
+        }
+
+        var visibleReports = reports
+            .Take(6)
+            .Reverse()
+            .ToList();
+
+        var maxWater = Math.Max(1m, visibleReports.Max(r => r.TotalWaterConsumption));
+        var maxGas = Math.Max(1m, visibleReports.Max(r => r.TotalGasConsumption));
+
+        return visibleReports.Select(x =>
+        {
+            var waterHeight = (int)Math.Max(12, Math.Min(100, (x.TotalWaterConsumption / maxWater) * 100));
+            var gasHeight = (int)Math.Max(12, Math.Min(100, (x.TotalGasConsumption / maxGas) * 100));
+
+            return new ChartBarVm(
+                x.GeneratedAtUtc.ToLocalTime().ToString("MM/dd"),
+                waterHeight,
+                gasHeight,
+                $"{x.TotalWaterConsumption} {x.TotalWaterUnit}",
+                $"{x.TotalGasConsumption} {x.TotalGasUnit}");
+        }).ToList();
+    }
+
+    private string GetPeriodButtonClass(string period)
+    {
+        return selectedPeriod == period ? "period-btn active" : "period-btn";
+    }
+
+    private void ResetGenerateForm()
+    {
+        newPeriod = "7D";
+        newWaterTotal = 0;
+        newWaterUnit = "L";
+        newGasTotal = 0;
+        newGasUnit = "m3";
+    }
+
+    private record ChartBarVm(
+        string Label,
+        int WaterHeight,
+        int GasHeight,
+        string WaterValueText,
+        string GasValueText);
+}
