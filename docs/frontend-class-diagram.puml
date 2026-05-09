@@ -5,25 +5,29 @@ skinparam packageStyle rectangle
 skinparam classAttributeIconSize 0
 skinparam shadowing false
 skinparam linetype ortho
+
 skinparam class {
   BackgroundColor #FFFFFF
   BorderColor #1F2937
   ArrowColor #1F2937
 }
+
 skinparam package {
   BackgroundColor #F8FAFC
   BorderColor #CBD5E1
 }
+
 skinparam note {
   BackgroundColor #EFF6FF
   BorderColor #60A5FA
 }
 
-' =========================
+' ==========================================================
 ' SHARED
-' =========================
+' ==========================================================
+
 package "shared" {
-  package "presentation/components" {
+  package "presentation/component" {
     class AppLayout <<Vue Component>> {
       +render()
       +hideNavigation
@@ -46,7 +50,7 @@ package "shared" {
     }
   }
 
-  package "application/services" {
+  package "application/service" {
     class TranslationService {
       +initialize()
       +setLanguage(language)
@@ -93,11 +97,12 @@ package "shared" {
   }
 }
 
-' =========================
+' ==========================================================
 ' IAM
-' =========================
+' ==========================================================
+
 package "iam" {
-  package "presentation/pages" {
+  package "presentation/page" {
     class LoginPage <<Vue Page>> {
       +form
       +handleSubmit()
@@ -132,7 +137,7 @@ package "iam" {
     }
   }
 
-  package "application/services" {
+  package "application/service" {
     class IamFacade {
       -iamApiService
       +signIn(payload)
@@ -175,7 +180,7 @@ package "iam" {
       +id
       +name
       +role
-      +permissions
+      +permission
       +roleLabel
     }
 
@@ -189,12 +194,13 @@ package "iam" {
   }
 }
 
-' =========================
-' PLANS
-' =========================
-package "plans" {
-  package "presentation/pages" {
-    class PlansPage <<Vue Page>> {
+' ==========================================================
+' PLAN
+' ==========================================================
+
+package "plan" {
+  package "presentation/page" {
+    class PlanPage <<Vue Page>> {
       +selectedPlan
       +checkout
       +openCheckout(plan)
@@ -203,23 +209,23 @@ package "plans" {
       +handleCardNumberInput(event)
       +handleExpirationDateInput(event)
       +handleSecurityCodeInput(event)
+      +isExpirationDateValid(expirationDate)
     }
   }
 
-  package "presentation/components" {
+  package "presentation/component" {
     class PlanCard <<Vue Component>> {
       +plan
       +active
-      +getPriceLabel(price)
       +getBillingPeriodLabel(period)
       +emitBuy(plan)
     }
   }
 
   package "application/store" {
-    class PlansStore {
+    class PlanStore {
       +state
-      +loadPlansPage()
+      +loadPlanPage()
       +subscribeToPlan(planId)
       +changePlan(planId)
       +cancelSubscription()
@@ -227,31 +233,31 @@ package "plans" {
     }
   }
 
-  package "application/services" {
-    class PlansFacade {
-      -plansApiService
-      +getPlans()
+  package "application/service" {
+    class PlanFacade {
+      -planApiService
+      +getPlan()
       +getPlanById(planId)
       +getActiveSubscription()
       +subscribe(payload)
       +changePlan(payload)
       +cancelSubscription(payload)
-      +getPayments()
-      +getServiceRequests()
+      +getPayment()
+      +getServiceRequest()
       +getSummary()
     }
   }
 
   package "infrastructure/api" {
-    class PlansApiService {
-      +getPlans()
+    class PlanApiService {
+      +getPlan()
       +getPlanById(planId)
       +getActiveSubscription()
       +subscribe(payload)
       +changePlan(payload)
       +cancelSubscription(payload)
-      +getPayments()
-      +getServiceRequests()
+      +getPayment()
+      +getServiceRequest()
       +getSummary()
     }
   }
@@ -265,10 +271,10 @@ package "plans" {
       +price
       +currency
       +billingPeriod
-      +maxSites
-      +maxDevices
+      +maxSite
+      +maxDevice
       +recommended
-      +features
+      +feature
     }
 
     class PlanFeature {
@@ -309,12 +315,13 @@ package "plans" {
   }
 }
 
-' =========================
+' ==========================================================
 ' WORKPLACE
-' =========================
+' ==========================================================
+
 package "workplace" {
-  package "presentation/pages" {
-    class SitesPage <<Vue Page>> {
+  package "presentation/page" {
+    class SitePage <<Vue Page>> {
       +selectedType
       +selectedSite
       +handleFilterChange(type)
@@ -324,10 +331,10 @@ package "workplace" {
     }
   }
 
-  package "presentation/components" {
+  package "presentation/component" {
     class SiteFilter <<Vue Component>> {
       +modelValue
-      +options
+      +option
       +emitUpdateModelValue(value)
     }
   }
@@ -336,7 +343,7 @@ package "workplace" {
     class WorkplaceStore {
       +state
       +loadWorkplace()
-      +filterSitesByType(type)
+      +filterSiteByType(type)
       +selectSite(siteId)
       +createSite(payload)
       +assignMemberToSite(payload)
@@ -345,17 +352,17 @@ package "workplace" {
     }
   }
 
-  package "application/services" {
+  package "application/service" {
     class WorkplaceFacade {
       -workplaceApiService
       +getWorkplace()
-      +getSites(type)
+      +getSite(type)
       +getSiteById(siteId)
       +createSite(payload)
       +assignMemberToSite(payload)
       +assignDeviceToSite(payload)
-      +getMembersBySite(siteId)
-      +getAssignmentsBySite(siteId)
+      +getMemberBySite(siteId)
+      +getAssignmentBySite(siteId)
       +getSummary()
     }
   }
@@ -363,13 +370,13 @@ package "workplace" {
   package "infrastructure/api" {
     class WorkplaceApiService {
       +getWorkplace()
-      +getSites(type)
+      +getSite(type)
       +getSiteById(siteId)
       +createSite(payload)
       +assignMemberToSite(payload)
       +assignDeviceToSite(payload)
-      +getMembersBySite(siteId)
-      +getAssignmentsBySite(siteId)
+      +getMemberBySite(siteId)
+      +getAssignmentBySite(siteId)
       +getSummary()
     }
   }
@@ -391,8 +398,8 @@ package "workplace" {
       +status
       +waterConsumption
       +gasConsumption
-      +activeSensors
-      +activeIncidents
+      +activeSensor
+      +activeIncident
     }
 
     class SiteMember {
@@ -415,22 +422,23 @@ package "workplace" {
   }
 }
 
-' =========================
+' ==========================================================
 ' DEVICE CONTROL
-' =========================
+' ==========================================================
+
 package "device-control" {
-  package "presentation/pages" {
-    class DevicesPage <<Vue Page>> {
+  package "presentation/page" {
+    class DevicePage <<Vue Page>> {
       +selectedDevice
-      +selectedDeviceSensors
-      +selectedDeviceValves
+      +selectedDeviceSensor
+      +selectedDeviceValve
       +handleCreateDevice()
       +handleLinkSensor()
       +handleExecuteCommand()
     }
   }
 
-  package "presentation/components" {
+  package "presentation/component" {
     class DeviceCard <<Vue Component>> {
       +device
       +active
@@ -455,7 +463,7 @@ package "device-control" {
   package "application/store" {
     class DeviceControlStore {
       +state
-      +loadDevicesPage()
+      +loadDevicePage()
       +selectDevice(deviceId)
       +getSelectedDevice()
       +createDevice(payload)
@@ -466,29 +474,29 @@ package "device-control" {
     }
   }
 
-  package "application/services" {
+  package "application/service" {
     class DeviceControlFacade {
       -deviceControlApiService
-      +getDevices()
+      +getDevice()
       +createDevice(payload)
       +linkSensor(payload)
       +closeValve(valveId)
       +openValve(valveId)
       +executeSyncCommand(deviceId)
-      +getCommands()
+      +getCommand()
       +getSummary()
     }
   }
 
   package "infrastructure/api" {
     class DeviceControlApiService {
-      +getDevices()
+      +getDevice()
       +createDevice(payload)
       +linkSensor(payload)
       +closeValve(valveId)
       +openValve(valveId)
       +executeSyncCommand(deviceId)
-      +getCommands()
+      +getCommand()
       +getSummary()
     }
   }
@@ -501,9 +509,9 @@ package "device-control" {
       +type
       +status
       +isOnline
-      +sensors
-      +valves
-      +commands
+      +sensor
+      +valve
+      +command
     }
 
     class Sensor {
@@ -540,18 +548,19 @@ package "device-control" {
   }
 }
 
-' =========================
+' ==========================================================
 ' MONITORING
-' =========================
+' ==========================================================
+
 package "monitoring" {
-  package "presentation/pages" {
+  package "presentation/page" {
     class DashboardPage <<Vue Page>> {
       +createRandomReading()
       +getSeverityLabel(severity)
       +getStatusLabel(status)
     }
 
-    class ReportsPage <<Vue Page>> {
+    class ReportPage <<Vue Page>> {
       +handleCreateReport()
       +getStatusClass(status)
       +getResourceLabel(resourceType)
@@ -559,7 +568,7 @@ package "monitoring" {
     }
   }
 
-  package "presentation/components" {
+  package "presentation/component" {
     class MetricCard <<Vue Component>> {
       +label
       +value
@@ -567,7 +576,7 @@ package "monitoring" {
     }
 
     class UsageChart <<Vue Component>> {
-      +items
+      +item
       +getWidth(value)
       +getResourceLabel(resourceType)
     }
@@ -582,15 +591,15 @@ package "monitoring" {
     }
   }
 
-  package "application/services" {
+  package "application/service" {
     class MonitoringFacade {
       -monitoringApiService
       +getSummary()
       +getActiveSession()
-      +getReadings()
-      +getAnomalies()
+      +getReading()
+      +getAnomaly()
       +createRandomReading()
-      +getReports()
+      +getReport()
       +createReport(siteId)
     }
   }
@@ -599,10 +608,10 @@ package "monitoring" {
     class MonitoringApiService {
       +getSummary()
       +getActiveSession()
-      +getReadings()
-      +getAnomalies()
+      +getReading()
+      +getAnomaly()
       +createRandomReading()
-      +getReports()
+      +getReport()
       +createReport(siteId)
     }
   }
@@ -611,8 +620,8 @@ package "monitoring" {
     class MonitoringSession {
       +id
       +isActive
-      +totalReadings
-      +totalAnomalies
+      +totalReading
+      +totalAnomaly
       +startedAt
     }
 
@@ -642,17 +651,18 @@ package "monitoring" {
       +period
       +totalWater
       +totalGas
-      +anomaliesCount
+      +anomalyCount
     }
   }
 }
 
-' =========================
-' NOTIFICATIONS
-' =========================
-package "notifications" {
-  package "presentation/pages" {
-    class AlertsPage <<Vue Page>> {
+' ==========================================================
+' NOTIFICATION
+' ==========================================================
+
+package "notification" {
+  package "presentation/page" {
+    class AlertPage <<Vue Page>> {
       +handleCreateAlert()
       +handleCreateThreshold()
       +getPriorityClass(priority)
@@ -660,7 +670,7 @@ package "notifications" {
     }
   }
 
-  package "presentation/components" {
+  package "presentation/component" {
     class AlertCard <<Vue Component>> {
       +alert
       +severityClass
@@ -678,9 +688,9 @@ package "notifications" {
   }
 
   package "application/store" {
-    class NotificationsStore {
+    class NotificationStore {
       +state
-      +loadAlertsPage()
+      +loadAlertPage()
       +createAlert(payload)
       +resolveAlert(alertId)
       +closeAlert(alertId)
@@ -689,34 +699,34 @@ package "notifications" {
     }
   }
 
-  package "application/services" {
-    class NotificationsFacade {
-      -notificationsApiService
-      +getAlerts()
+  package "application/service" {
+    class NotificationFacade {
+      -notificationApiService
+      +getAlert()
       +createAlert(payload)
       +resolveAlert(alertId)
       +closeAlert(alertId)
-      +getThresholds()
+      +getThreshold()
       +createThreshold(payload)
-      +getIncidents()
-      +getNotificationChannels()
-      +getAlertDeliveries()
+      +getIncident()
+      +getNotificationChannel()
+      +getAlertDelivery()
       +sendAlert(alertId)
       +getSummary()
     }
   }
 
   package "infrastructure/api" {
-    class NotificationsApiService {
-      +getAlerts()
+    class NotificationApiService {
+      +getAlert()
       +createAlert(payload)
       +resolveAlert(alertId)
       +closeAlert(alertId)
-      +getThresholds()
+      +getThreshold()
       +createThreshold(payload)
-      +getIncidents()
-      +getNotificationChannels()
-      +getAlertDeliveries()
+      +getIncident()
+      +getNotificationChannel()
+      +getAlertDelivery()
       +sendAlert(alertId)
       +getSummary()
     }
@@ -774,11 +784,12 @@ package "notifications" {
   }
 }
 
-' =========================
+' ==========================================================
 ' SUPPORT
-' =========================
+' ==========================================================
+
 package "support" {
-  package "presentation/pages" {
+  package "presentation/page" {
     class SupportPage <<Vue Page>> {
       +messageContent
       +selectedTicket
@@ -790,7 +801,7 @@ package "support" {
     }
   }
 
-  package "presentation/components" {
+  package "presentation/component" {
     class SupportTicketCard <<Vue Component>> {
       +ticket
       +active
@@ -820,31 +831,31 @@ package "support" {
     }
   }
 
-  package "application/services" {
+  package "application/service" {
     class SupportFacade {
       -supportApiService
-      +getTickets()
+      +getTicket()
       +createTicket(payload)
       +resolveTicket(ticketId)
       +closeTicket(ticketId)
       +sendMessage(payload)
-      +getAgents()
-      +getArticles()
-      +getConversations()
+      +getAgent()
+      +getArticle()
+      +getConversation()
       +getSummary()
     }
   }
 
   package "infrastructure/api" {
     class SupportApiService {
-      +getTickets()
+      +getTicket()
       +createTicket(payload)
       +resolveTicket(ticketId)
       +closeTicket(ticketId)
       +sendMessage(payload)
-      +getAgents()
-      +getArticles()
-      +getConversations()
+      +getAgent()
+      +getArticle()
+      +getConversation()
       +getSummary()
     }
   }
@@ -860,7 +871,7 @@ package "support" {
       +priority
       +status
       +assignedAgentId
-      +messages
+      +message
     }
 
     class SupportMessage {
@@ -884,7 +895,7 @@ package "support" {
       +id
       +ticketId
       +status
-      +messages
+      +message
     }
 
     class KnowledgeArticle {
@@ -898,9 +909,9 @@ package "support" {
   }
 }
 
-' =========================
+' ==========================================================
 ' GENERAL DEPENDENCIES
-' =========================
+' ==========================================================
 
 AppLayout --> BottomNavigation
 AppLayout --> LanguageSwitcher
@@ -913,7 +924,7 @@ RouterGuard --> SubscriptionAccessService
 SubscriptionAccessService --> ApiClientService
 SubscriptionAccessService --> AuthSessionService
 
-' IAM dependencies
+' IAM
 LoginPage --> AppLayout
 LoginPage --> UiCard
 LoginPage --> IamStore
@@ -944,30 +955,30 @@ IamApiService ..> AuthSession
 
 User --> AccessProfile : accessProfileId
 
-' Plans dependencies
-PlansPage --> AppLayout
-PlansPage --> UiCard
-PlansPage --> PlanCard
-PlansPage --> PlansStore
-PlansPage --> TranslationService
+' Plan
+PlanPage --> AppLayout
+PlanPage --> UiCard
+PlanPage --> PlanCard
+PlanPage --> PlanStore
+PlanPage --> TranslationService
 
 PlanCard --> TranslationService
-PlansStore --> PlansFacade
-PlansFacade --> PlansApiService
-PlansApiService --> ApiClientService
-PlansApiService --> AuthSessionService
+PlanStore --> PlanFacade
+PlanFacade --> PlanApiService
+PlanApiService --> ApiClientService
+PlanApiService --> AuthSessionService
 
 Plan "1" o-- "*" PlanFeature
 Subscription --> Plan : planId
 Payment --> Subscription : subscriptionId
 ServiceRequest --> Subscription : subscriptionId
 
-' Workplace dependencies
-SitesPage --> AppLayout
-SitesPage --> UiCard
-SitesPage --> SiteFilter
-SitesPage --> WorkplaceStore
-SitesPage --> TranslationService
+' Workplace
+SitePage --> AppLayout
+SitePage --> UiCard
+SitePage --> SiteFilter
+SitePage --> WorkplaceStore
+SitePage --> TranslationService
 
 SiteFilter --> TranslationService
 WorkplaceStore --> WorkplaceFacade
@@ -978,14 +989,14 @@ Workplace "1" o-- "*" Site
 Site "1" o-- "*" SiteMember
 Site "1" o-- "*" SiteDeviceAssignment
 
-' Device dependencies
-DevicesPage --> AppLayout
-DevicesPage --> UiCard
-DevicesPage --> DeviceCard
-DevicesPage --> SensorCard
-DevicesPage --> ValveControl
-DevicesPage --> DeviceControlStore
-DevicesPage --> TranslationService
+' Device Control
+DevicePage --> AppLayout
+DevicePage --> UiCard
+DevicePage --> DeviceCard
+DevicePage --> SensorCard
+DevicePage --> ValveControl
+DevicePage --> DeviceControlStore
+DevicePage --> TranslationService
 
 DeviceCard --> TranslationService
 SensorCard --> TranslationService
@@ -1000,7 +1011,7 @@ Device "1" o-- "*" Valve
 Device "1" o-- "*" DeviceCommand
 Device --> Site : siteId
 
-' Monitoring dependencies
+' Monitoring
 DashboardPage --> AppLayout
 DashboardPage --> UiCard
 DashboardPage --> MetricCard
@@ -1008,11 +1019,11 @@ DashboardPage --> UsageChart
 DashboardPage --> MonitoringStore
 DashboardPage --> TranslationService
 
-ReportsPage --> AppLayout
-ReportsPage --> UiCard
-ReportsPage --> MetricCard
-ReportsPage --> MonitoringStore
-ReportsPage --> TranslationService
+ReportPage --> AppLayout
+ReportPage --> UiCard
+ReportPage --> MetricCard
+ReportPage --> MonitoringStore
+ReportPage --> TranslationService
 
 UsageChart --> TranslationService
 MonitoringStore --> MonitoringFacade
@@ -1024,27 +1035,27 @@ Reading "1" --> "0..1" Anomaly
 Report --> Site : siteId
 Reading --> Sensor : sensorId
 
-' Notifications dependencies
-AlertsPage --> AppLayout
-AlertsPage --> UiCard
-AlertsPage --> AlertCard
-AlertsPage --> ThresholdCard
-AlertsPage --> NotificationsStore
-AlertsPage --> TranslationService
+' Notification
+AlertPage --> AppLayout
+AlertPage --> UiCard
+AlertPage --> AlertCard
+AlertPage --> ThresholdCard
+AlertPage --> NotificationStore
+AlertPage --> TranslationService
 
 AlertCard --> TranslationService
 ThresholdCard --> TranslationService
 
-NotificationsStore --> NotificationsFacade
-NotificationsFacade --> NotificationsApiService
-NotificationsApiService --> ApiClientService
+NotificationStore --> NotificationFacade
+NotificationFacade --> NotificationApiService
+NotificationApiService --> ApiClientService
 
 Alert "1" --> "0..*" Incident
 Alert "1" --> "0..*" AlertDelivery
 Threshold --> Sensor : sensorId
 AlertDelivery --> NotificationChannel : channelId
 
-' Support dependencies
+' Support
 SupportPage --> AppLayout
 SupportPage --> UiCard
 SupportPage --> SupportTicketCard
@@ -1079,5 +1090,10 @@ Site --> SupportTicket : siteId
 Sensor --> Reading : sensorId
 Sensor --> Alert : sensorId
 Sensor --> Threshold : sensorId
+
+note bottom
+Los endpoints REST se mantienen en plural porque representan colecciones.
+Las clases, páginas, stores, facades, services, modelos y componentes se expresan en singular.
+end note
 
 @enduml
