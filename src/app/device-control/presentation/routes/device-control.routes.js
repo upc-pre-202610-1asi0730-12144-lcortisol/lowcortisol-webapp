@@ -1,10 +1,10 @@
-import DevicesPage from "../pages/devices/devices-page.component.vue";
+import DevicePage from "../pages/device/device-page.component.vue";
 
 export const deviceControlRoutes = [
     {
         path: "/devices",
         name: "devices",
-        component: DevicesPage,
+        component: DevicePage,
         meta: {
             requiresAuth: true,
             requiresSubscription: true,

@@ -24,7 +24,7 @@ const state = reactive({
     message: "",
 });
 
-async function loadDevicesPage() {
+async function loadDevicePage() {
     state.loading = true;
     state.error = null;
 
@@ -56,7 +56,7 @@ function getSelectedDevice() {
 async function createDevice(payload) {
     const device = await deviceControlFacade.createDevice(payload);
 
-    await loadDevicesPage();
+    await loadDevicePage();
 
     state.selectedDeviceId = device.id;
     state.message = "Dispositivo creado correctamente.";
@@ -67,7 +67,7 @@ async function createDevice(payload) {
 async function linkSensor(payload) {
     const sensor = await deviceControlFacade.linkSensor(payload);
 
-    await loadDevicesPage();
+    await loadDevicePage();
 
     state.message = "Sensor vinculado correctamente.";
 
@@ -81,7 +81,7 @@ async function closeValve(valveId) {
         openingPercentage: 0,
     });
 
-    await loadDevicesPage();
+    await loadDevicePage();
 
     state.message = "Válvula cerrada correctamente.";
 
@@ -95,7 +95,7 @@ async function openValve(valveId) {
         openingPercentage: 100,
     });
 
-    await loadDevicesPage();
+    await loadDevicePage();
 
     state.message = "Válvula abierta correctamente.";
 
@@ -111,7 +111,7 @@ async function executeSyncCommand(deviceId) {
         },
     });
 
-    await loadDevicesPage();
+    await loadDevicePage();
 
     state.message = "Comando ejecutado correctamente.";
 
@@ -121,7 +121,7 @@ async function executeSyncCommand(deviceId) {
 export function useDeviceControlStore() {
     return {
         state: readonly(state),
-        loadDevicesPage,
+        loadDevicePage,
         selectDevice,
         getSelectedDevice,
         createDevice,

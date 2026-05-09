@@ -6,8 +6,8 @@ import { iamRoutes } from "./iam/presentation/routes/iam.routes";
 import { monitoringRoutes } from "./monitoring/presentation/routes/monitoring.routes";
 import { workplaceRoutes } from "./workplace/presentation/routes/workplace.routes";
 import { deviceControlRoutes } from "./device-control/presentation/routes/device-control.routes";
-import { notificationsRoutes } from "./notifications/presentation/routes/notifications.routes";
-import { plansRoutes } from "./plans/presentation/routes/plans.routes";
+import { notificationRoutes } from "./notification/presentation/routes/notification.routes";
+import { planRoutes } from "./plan/presentation/routes/plan.routes";
 import { supportRoutes } from "./support/presentation/routes/support.routes";
 
 export const appRoutes = [
@@ -22,8 +22,8 @@ export const appRoutes = [
     ...monitoringRoutes,
     ...workplaceRoutes,
     ...deviceControlRoutes,
-    ...notificationsRoutes,
-    ...plansRoutes,
+    ...notificationRoutes,
+    ...planRoutes,
     ...supportRoutes,
 
     {

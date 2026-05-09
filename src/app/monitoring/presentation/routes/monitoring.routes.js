@@ -1,5 +1,5 @@
 import DashboardPage from "../pages/dashboard/dashboard-page.component.vue";
-import ReportsPage from "../pages/reports/reports-page.component.vue";
+import ReportPage from "../pages/report/report-page.component.vue";
 
 export const monitoringRoutes = [
     {
@@ -14,7 +14,7 @@ export const monitoringRoutes = [
     {
         path: "/reports",
         name: "reports",
-        component: ReportsPage,
+        component: ReportPage,
         meta: {
             requiresAuth: true,
             requiresSubscription: true,
