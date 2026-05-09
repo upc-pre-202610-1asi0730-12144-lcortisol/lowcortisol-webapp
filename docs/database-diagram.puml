@@ -1,0 +1,495 @@
+@startuml
+title LowCortisol Platform - Database Diagram
+
+skinparam linetype ortho
+skinparam shadowing false
+skinparam packageStyle rectangle
+
+skinparam entity {
+  BackgroundColor #FFFFFF
+  BorderColor #1F2937
+  ArrowColor #1F2937
+}
+
+' ==========================================================
+' IAM
+' ==========================================================
+
+entity "user" as user {
+  * id : uuid <<PK>>
+  --
+  full_name : varchar
+  email : varchar <<unique>>
+  phone : varchar
+  password_hash : varchar
+  status : varchar
+  access_profile_id : uuid <<FK>>
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "access_profile" as access_profile {
+  * id : uuid <<PK>>
+  --
+  name : varchar
+  role : varchar
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "permission" as permission {
+  * id : uuid <<PK>>
+  --
+  code : varchar <<unique>>
+  description : varchar
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "access_profile_permission" as access_profile_permission {
+  * id : uuid <<PK>>
+  --
+  access_profile_id : uuid <<FK>>
+  permission_id : uuid <<FK>>
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "auth_session" as auth_session {
+  * id : uuid <<PK>>
+  --
+  user_id : uuid <<FK>>
+  token : varchar
+  refresh_token : varchar
+  is_active : boolean
+  expires_at : datetime
+  created_at : datetime
+  updated_at : datetime
+}
+
+' ==========================================================
+' PLANS
+' ==========================================================
+
+entity "plan" as plan {
+  * id : uuid <<PK>>
+  --
+  name : varchar
+  code : varchar <<unique>>
+  description : varchar
+  price : decimal
+  currency : varchar
+  billing_period : varchar
+  max_site : int
+  max_device : int
+  recommended : boolean
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "plan_feature" as plan_feature {
+  * id : uuid <<PK>>
+  --
+  plan_id : uuid <<FK>>
+  name : varchar
+  description : varchar
+  included : boolean
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "subscription" as subscription {
+  * id : uuid <<PK>>
+  --
+  user_id : uuid <<FK>>
+  workplace_id : uuid <<FK>>
+  plan_id : uuid <<FK>>
+  status : varchar
+  started_at : datetime
+  expires_at : datetime
+  auto_renew : boolean
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "payment" as payment {
+  * id : uuid <<PK>>
+  --
+  subscription_id : uuid <<FK>>
+  amount : decimal
+  currency : varchar
+  method : varchar
+  status : varchar
+  paid_at : datetime
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "service_request" as service_request {
+  * id : uuid <<PK>>
+  --
+  subscription_id : uuid <<FK>>
+  type : varchar
+  description : varchar
+  status : varchar
+  created_at : datetime
+  updated_at : datetime
+}
+
+' ==========================================================
+' WORKPLACE
+' ==========================================================
+
+entity "workplace" as workplace {
+  * id : uuid <<PK>>
+  --
+  owner_id : uuid <<FK>>
+  name : varchar
+  description : varchar
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "site" as site {
+  * id : uuid <<PK>>
+  --
+  workplace_id : uuid <<FK>>
+  name : varchar
+  address : varchar
+  type : varchar
+  status : varchar
+  water_consumption : decimal
+  gas_consumption : decimal
+  active_sensor : int
+  active_incident : int
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "site_member" as site_member {
+  * id : uuid <<PK>>
+  --
+  site_id : uuid <<FK>>
+  user_id : uuid <<FK>>
+  full_name : varchar
+  email : varchar
+  role : varchar
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "site_device_assignment" as site_device_assignment {
+  * id : uuid <<PK>>
+  --
+  site_id : uuid <<FK>>
+  device_id : uuid <<FK>>
+  device_name : varchar
+  device_type : varchar
+  status : varchar
+  created_at : datetime
+  updated_at : datetime
+}
+
+' ==========================================================
+' DEVICE CONTROL
+' ==========================================================
+
+entity "device" as device {
+  * id : uuid <<PK>>
+  --
+  site_id : uuid <<FK>>
+  name : varchar
+  type : varchar
+  status : varchar
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "sensor" as sensor {
+  * id : uuid <<PK>>
+  --
+  device_id : uuid <<FK>>
+  site_id : uuid <<FK>>
+  name : varchar
+  resource_type : varchar
+  current_value : decimal
+  unit : varchar
+  threshold : decimal
+  status : varchar
+  has_exceeded_threshold : boolean
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "valve" as valve {
+  * id : uuid <<PK>>
+  --
+  device_id : uuid <<FK>>
+  site_id : uuid <<FK>>
+  name : varchar
+  resource_type : varchar
+  status : varchar
+  opening_percentage : int
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "device_command" as device_command {
+  * id : uuid <<PK>>
+  --
+  device_id : uuid <<FK>>
+  command_type : varchar
+  status : varchar
+  created_at : datetime
+  updated_at : datetime
+}
+
+' ==========================================================
+' MONITORING
+' ==========================================================
+
+entity "monitoring_session" as monitoring_session {
+  * id : uuid <<PK>>
+  --
+  is_active : boolean
+  total_reading : int
+  total_anomaly : int
+  started_at : datetime
+  finished_at : datetime
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "reading" as reading {
+  * id : uuid <<PK>>
+  --
+  monitoring_session_id : uuid <<FK>>
+  sensor_id : uuid <<FK>>
+  site_id : uuid <<FK>>
+  resource_type : varchar
+  value : decimal
+  unit : varchar
+  status : varchar
+  measured_at : datetime
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "anomaly" as anomaly {
+  * id : uuid <<PK>>
+  --
+  reading_id : uuid <<FK>>
+  site_id : uuid <<FK>>
+  severity : varchar
+  description : varchar
+  status : varchar
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "report" as report {
+  * id : uuid <<PK>>
+  --
+  site_id : uuid <<FK>>
+  period : varchar
+  total_water : decimal
+  total_gas : decimal
+  anomaly_count : int
+  generated_at : datetime
+  created_at : datetime
+  updated_at : datetime
+}
+
+' ==========================================================
+' NOTIFICATIONS
+' ==========================================================
+
+entity "alert" as alert {
+  * id : uuid <<PK>>
+  --
+  site_id : uuid <<FK>>
+  sensor_id : uuid <<FK>>
+  resource_type : varchar
+  title : varchar
+  description : varchar
+  severity : varchar
+  status : varchar
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "threshold" as threshold {
+  * id : uuid <<PK>>
+  --
+  site_id : uuid <<FK>>
+  sensor_id : uuid <<FK>>
+  resource_type : varchar
+  warning_limit : decimal
+  critical_limit : decimal
+  unit : varchar
+  enabled : boolean
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "incident" as incident {
+  * id : uuid <<PK>>
+  --
+  alert_id : uuid <<FK>>
+  site_id : uuid <<FK>>
+  title : varchar
+  description : varchar
+  priority : varchar
+  status : varchar
+  assigned_to : uuid <<FK>>
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "notification_channel" as notification_channel {
+  * id : uuid <<PK>>
+  --
+  name : varchar
+  type : varchar
+  destination : varchar
+  enabled : boolean
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "alert_delivery" as alert_delivery {
+  * id : uuid <<PK>>
+  --
+  alert_id : uuid <<FK>>
+  channel_id : uuid <<FK>>
+  status : varchar
+  sent_at : datetime
+  created_at : datetime
+  updated_at : datetime
+}
+
+' ==========================================================
+' SUPPORT
+' ==========================================================
+
+entity "support_agent" as support_agent {
+  * id : uuid <<PK>>
+  --
+  full_name : varchar
+  email : varchar
+  specialty : varchar
+  status : varchar
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "support_ticket" as support_ticket {
+  * id : uuid <<PK>>
+  --
+  user_id : uuid <<FK>>
+  site_id : uuid <<FK>>
+  title : varchar
+  description : varchar
+  category : varchar
+  priority : varchar
+  status : varchar
+  assigned_agent_id : uuid <<FK>>
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "support_message" as support_message {
+  * id : uuid <<PK>>
+  --
+  ticket_id : uuid <<FK>>
+  sender_id : uuid
+  sender_type : varchar
+  content : varchar
+  status : varchar
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "support_conversation" as support_conversation {
+  * id : uuid <<PK>>
+  --
+  ticket_id : uuid <<FK>>
+  status : varchar
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "knowledge_article" as knowledge_article {
+  * id : uuid <<PK>>
+  --
+  title : varchar
+  summary : varchar
+  category : varchar
+  content : text
+  helpful_count : int
+  created_at : datetime
+  updated_at : datetime
+}
+
+' ==========================================================
+' RELATIONSHIPS
+' ==========================================================
+
+access_profile ||--o{ user : "access_profile_id"
+access_profile ||--o{ access_profile_permission : "access_profile_id"
+permission ||--o{ access_profile_permission : "permission_id"
+user ||--o{ auth_session : "user_id"
+
+user ||--o{ workplace : "owner_id"
+workplace ||--o{ site : "workplace_id"
+
+user ||--o{ subscription : "user_id"
+workplace ||--o{ subscription : "workplace_id"
+plan ||--o{ subscription : "plan_id"
+plan ||--o{ plan_feature : "plan_id"
+subscription ||--o{ payment : "subscription_id"
+subscription ||--o{ service_request : "subscription_id"
+
+site ||--o{ site_member : "site_id"
+user ||--o{ site_member : "user_id"
+
+site ||--o{ device : "site_id"
+site ||--o{ site_device_assignment : "site_id"
+device ||--o{ site_device_assignment : "device_id"
+
+device ||--o{ sensor : "device_id"
+device ||--o{ valve : "device_id"
+device ||--o{ device_command : "device_id"
+
+site ||--o{ sensor : "site_id"
+site ||--o{ valve : "site_id"
+
+monitoring_session ||--o{ reading : "monitoring_session_id"
+sensor ||--o{ reading : "sensor_id"
+site ||--o{ reading : "site_id"
+
+reading ||--o| anomaly : "reading_id"
+site ||--o{ anomaly : "site_id"
+site ||--o{ report : "site_id"
+
+site ||--o{ alert : "site_id"
+sensor ||--o{ alert : "sensor_id"
+
+site ||--o{ threshold : "site_id"
+sensor ||--o{ threshold : "sensor_id"
+
+alert ||--o{ incident : "alert_id"
+site ||--o{ incident : "site_id"
+user ||--o{ incident : "assigned_to"
+
+alert ||--o{ alert_delivery : "alert_id"
+notification_channel ||--o{ alert_delivery : "channel_id"
+
+user ||--o{ support_ticket : "user_id"
+site ||--o{ support_ticket : "site_id"
+support_agent ||--o{ support_ticket : "assigned_agent_id"
+
+support_ticket ||--o{ support_message : "ticket_id"
+support_ticket ||--o| support_conversation : "ticket_id"
+
+@enduml
