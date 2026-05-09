@@ -31,11 +31,11 @@ const { t } = useTranslation();
 
 function getResourceLabel(resourceType) {
   const keys = {
-    water: "notifications.resources.water",
-    gas: "notifications.resources.gas",
+    water: "notifications.resource.water",
+    gas: "notifications.resource.gas",
   };
 
-  return t(keys[resourceType] ?? "notifications.resources.water");
+  return t(keys[resourceType] ?? "notifications.resource.water");
 }
 </script>
 

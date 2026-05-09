@@ -33,8 +33,8 @@ export class PlanFacade {
         return this.planApiService.getPayments();
     }
 
-    async getServiceRequests() {
-        return this.planApiService.getServiceRequests();
+    async getServiceRequest() {
+        return this.planApiService.getServiceRequest();
     }
 
     async getSummary() {

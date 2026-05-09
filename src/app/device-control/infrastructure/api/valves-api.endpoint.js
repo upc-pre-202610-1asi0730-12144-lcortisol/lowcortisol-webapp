@@ -1,5 +1,5 @@
 import { BaseApiEndpoint } from "../../../shared/infrastructure/api/base-api.endpoint";
-import { ValveAssembler } from "../assemblers/valve.assembler";
+import { ValveAssembler } from "../assembler/valve.assembler";
 
 export class ValvesApiEndpoint extends BaseApiEndpoint {
     constructor() {
@@ -8,9 +8,9 @@ export class ValvesApiEndpoint extends BaseApiEndpoint {
 
     async getValvesByDevice(deviceId) {
         const response = await this.getFromPath(`?deviceId=${deviceId}`);
-        const resources = response?.data ?? response ?? [];
+        const resource = response?.data ?? response ?? [];
 
-        return this.assembler.toEntities(resources);
+        return this.assembler.toEntities(resource);
     }
 
     async closeValve(valveId) {

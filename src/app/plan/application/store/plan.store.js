@@ -7,14 +7,14 @@ const state = reactive({
     plans: [],
     subscription: null,
     payments: [],
-    serviceRequests: [],
+    serviceRequest: [],
     summary: {
         totalPlans: 0,
         activePlanName: "",
         subscriptionStatus: "",
         totalPayments: 0,
         totalPaid: 0,
-        serviceRequests: 0,
+        serviceRequest: 0,
         maxSites: 0,
         maxDevices: 0,
     },
@@ -31,7 +31,7 @@ async function loadPlanPage() {
         state.plans = await planFacade.getPlans();
         state.subscription = await planFacade.getActiveSubscription();
         state.payments = await planFacade.getPayments();
-        state.serviceRequests = await planFacade.getServiceRequests();
+        state.serviceRequest = await planFacade.getServiceRequest();
         state.summary = await planFacade.getSummary();
     } catch (error) {
         state.error = error.message || "No se pudieron cargar los planes.";

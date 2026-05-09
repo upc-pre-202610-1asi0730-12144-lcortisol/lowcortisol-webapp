@@ -120,11 +120,11 @@ function getStatusClass(status) {
 
 function getResourceLabel(resourceType) {
   const keys = {
-    water: "monitoring.resources.water",
-    gas: "monitoring.resources.gas",
+    water: "monitoring.resource.water",
+    gas: "monitoring.resource.gas",
   };
 
-  return t(keys[resourceType] ?? "monitoring.resources.water");
+  return t(keys[resourceType] ?? "monitoring.resource.water");
 }
 
 function getPeriodLabel(period) {

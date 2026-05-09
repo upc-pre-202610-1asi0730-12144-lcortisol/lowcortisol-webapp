@@ -1,5 +1,5 @@
 import { BaseApiEndpoint } from "../../../shared/infrastructure/api/base-api.endpoint";
-import { AlertAssembler } from "../assemblers/alert.assembler";
+import { AlertAssembler } from "../assembler/alert.assembler";
 
 export class AlertApiEndpoint extends BaseApiEndpoint {
     constructor() {
@@ -8,9 +8,9 @@ export class AlertApiEndpoint extends BaseApiEndpoint {
 
     async getAlertsBySite(siteId) {
         const response = await this.getFromPath(`?siteId=${siteId}`);
-        const resources = response?.data ?? response ?? [];
+        const resource = response?.data ?? response ?? [];
 
-        return this.assembler.toEntities(resources);
+        return this.assembler.toEntities(resource);
     }
 
     async resolveAlert(alertId) {
