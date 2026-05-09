@@ -1,5 +1,5 @@
 import { BaseApiEndpoint } from "../../../shared/infrastructure/api/base-api.endpoint";
-import { SubscriptionAssembler } from "../assemblers/subscription.assembler";
+import { SubscriptionAssembler } from "../assembler/subscription.assembler";
 
 export class SubscriptionsApiEndpoint extends BaseApiEndpoint {
     constructor() {

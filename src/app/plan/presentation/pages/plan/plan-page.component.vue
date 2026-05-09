@@ -180,14 +180,14 @@
         </div>
       </UiCard>
 
-      <UiCard :title="t('plans.page.serviceRequests')">
-        <div v-if="state.serviceRequests.length === 0" class="empty-state">
-          {{ t('plans.page.noRequests') }}
+      <UiCard :title="t('plans.page.serviceRequest')">
+        <div v-if="state.serviceRequest.length === 0" class="empty-state">
+          {{ t('plans.page.noRequest') }}
         </div>
 
         <div v-else class="simple-list">
           <div
-              v-for="request in state.serviceRequests"
+              v-for="request in state.serviceRequest"
               :key="request.id"
               class="simple-item"
           >
@@ -383,12 +383,12 @@ function getRequestStatusLabel(status) {
 
 function getRequestTypeLabel(type) {
   const keys = {
-    "change-plan": "plans.requests.changePlan",
-    cancellation: "plans.requests.cancellation",
-    support: "plans.requests.support",
+    "change-plan": "plans.request.changePlan",
+    cancellation: "plans.request.cancellation",
+    support: "plans.request.support",
   };
 
-  return t(keys[type] ?? "plans.requests.request");
+  return t(keys[type] ?? "plans.request.request");
 }
 </script>
 

@@ -1,5 +1,5 @@
 import { BaseApiEndpoint } from "../../../shared/infrastructure/api/base-api.endpoint";
-import { PlanAssembler } from "../assemblers/plan.assembler";
+import { PlanAssembler } from "../assembler/plan.assembler";
 
 export class PlanApiEndpoint extends BaseApiEndpoint {
     constructor() {
@@ -8,8 +8,8 @@ export class PlanApiEndpoint extends BaseApiEndpoint {
 
     async getRecommendedPlans() {
         const response = await this.getFromPath("?recommended=true");
-        const resources = response?.data ?? response ?? [];
+        const resource = response?.data ?? response ?? [];
 
-        return this.assembler.toEntities(resources);
+        return this.assembler.toEntities(resource);
     }
 }

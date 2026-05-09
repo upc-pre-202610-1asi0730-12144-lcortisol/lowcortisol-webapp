@@ -1,5 +1,5 @@
 import { BaseApiEndpoint } from "../../../shared/infrastructure/api/base-api.endpoint";
-import { SiteAssembler } from "../assemblers/site.assembler";
+import { SiteAssembler } from "../assembler/site.assembler";
 
 export class SiteApiEndpoint extends BaseApiEndpoint {
     constructor() {
@@ -8,22 +8,22 @@ export class SiteApiEndpoint extends BaseApiEndpoint {
 
     async getSitesByWorkplace(workplaceId) {
         const response = await this.getFromPath(`?workplaceId=${workplaceId}`);
-        const resources = response?.data ?? response ?? [];
+        const resource = response?.data ?? response ?? [];
 
-        return this.assembler.toEntities(resources);
+        return this.assembler.toEntities(resource);
     }
 
     async getSitesByType(type) {
         const response = await this.getFromPath(`?type=${type}`);
-        const resources = response?.data ?? response ?? [];
+        const resource = response?.data ?? response ?? [];
 
-        return this.assembler.toEntities(resources);
+        return this.assembler.toEntities(resource);
     }
 
     async getActiveSites() {
         const response = await this.getFromPath("/active");
-        const resources = response?.data ?? response ?? [];
+        const resource = response?.data ?? response ?? [];
 
-        return this.assembler.toEntities(resources);
+        return this.assembler.toEntities(resource);
     }
 }

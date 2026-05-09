@@ -1,5 +1,5 @@
 import { BaseApiEndpoint } from "../../../shared/infrastructure/api/base-api.endpoint";
-import { WorkplaceAssembler } from "../assemblers/workplace.assembler";
+import { WorkplaceAssembler } from "../assembler/workplace.assembler";
 
 export class WorkplacesApiEndpoint extends BaseApiEndpoint {
     constructor() {

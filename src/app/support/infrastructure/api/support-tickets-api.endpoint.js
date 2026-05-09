@@ -1,5 +1,5 @@
 import { BaseApiEndpoint } from "../../../shared/infrastructure/api/base-api.endpoint";
-import { SupportTicketAssembler } from "../assemblers/support-ticket.assembler";
+import { SupportTicketAssembler } from "../assembler/support-ticket.assembler";
 
 export class SupportTicketsApiEndpoint extends BaseApiEndpoint {
     constructor() {
@@ -8,9 +8,9 @@ export class SupportTicketsApiEndpoint extends BaseApiEndpoint {
 
     async getTicketsByUser(userId) {
         const response = await this.getFromPath(`?userId=${userId}`);
-        const resources = response?.data ?? response ?? [];
+        const resource = response?.data ?? response ?? [];
 
-        return this.assembler.toEntities(resources);
+        return this.assembler.toEntities(resource);
     }
 
     async resolveTicket(ticketId) {

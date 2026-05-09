@@ -1,5 +1,5 @@
 import { BaseApiEndpoint } from "../../../shared/infrastructure/api/base-api.endpoint";
-import { UserAssembler } from "../assemblers/user.assembler";
+import { UserAssembler } from "../assembler/user.assembler";
 
 export class IamApiEndpoint extends BaseApiEndpoint {
     constructor() {

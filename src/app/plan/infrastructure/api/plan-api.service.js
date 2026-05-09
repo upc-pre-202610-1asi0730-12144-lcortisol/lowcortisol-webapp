@@ -86,7 +86,7 @@ export class PlanApiService {
             updatedAt: new Date().toISOString(),
         });
 
-        await ApiClientService.post("/serviceRequests", {
+        await ApiClientService.post("/serviceRequest", {
             subscriptionId: activeSubscription.id,
             type: "change-plan",
             description: `Cambio solicitado al plan ${plan.name}.`,
@@ -111,7 +111,7 @@ export class PlanApiService {
             updatedAt: new Date().toISOString(),
         });
 
-        await ApiClientService.post("/serviceRequests", {
+        await ApiClientService.post("/serviceRequest", {
             subscriptionId: activeSubscription.id,
             type: "cancellation",
             description: payload.reason || "Cancelación solicitada por el usuario.",
@@ -136,7 +136,7 @@ export class PlanApiService {
         return payments.filter((payment) => subscriptionIds.includes(payment.subscriptionId));
     }
 
-    async getServiceRequests() {
+    async getServiceRequest() {
         const userId = getCurrentUserId();
 
         const subscriptions = await ApiClientService.get("/subscriptions", {
@@ -144,16 +144,16 @@ export class PlanApiService {
         });
 
         const subscriptionIds = subscriptions.map((subscription) => subscription.id);
-        const requests = await ApiClientService.get("/serviceRequests");
+        const request = await ApiClientService.get("/serviceRequest");
 
-        return requests.filter((request) => subscriptionIds.includes(request.subscriptionId));
+        return request.filter((request) => subscriptionIds.includes(request.subscriptionId));
     }
 
     async getSummary() {
         const plans = await this.getPlans();
         const subscription = await this.getActiveSubscription();
         const payments = await this.getPayments();
-        const serviceRequests = await this.getServiceRequests();
+        const serviceRequest = await this.getServiceRequest();
 
         const activePlan = subscription
             ? plans.find((plan) => plan.id === subscription.planId)
@@ -165,7 +165,7 @@ export class PlanApiService {
             subscriptionStatus: subscription?.status || "inactive",
             totalPayments: payments.length,
             totalPaid: payments.reduce((total, payment) => total + Number(payment.amount || 0), 0),
-            serviceRequests: serviceRequests.length,
+            serviceRequest: serviceRequest.length,
             maxSites: activePlan?.maxSites || 0,
             maxDevices: activePlan?.maxDevices || 0,
         };
