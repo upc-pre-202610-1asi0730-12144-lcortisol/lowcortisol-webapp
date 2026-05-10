@@ -62,7 +62,7 @@ router.beforeEach(async (to) => {
             await SubscriptionAccessService.hasActiveSubscription();
 
         return {
-            name: hasActiveSubscription ? "dashboard" : "plan",
+            name: hasActiveSubscription ? "dashboard" : "plans",
         };
     }
 
@@ -72,7 +72,7 @@ router.beforeEach(async (to) => {
 
         if (!hasActiveSubscription) {
             return {
-                name: "plan",
+                name: "plans",
             };
         }
     }

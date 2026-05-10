@@ -75,7 +75,7 @@ const form = reactive({
 
 async function handleSubmit() {
   await signIn(form);
-  await router.push({ name: "dashboard" });
+  await router.push({ name: "plans" });
 }
 </script>
 
