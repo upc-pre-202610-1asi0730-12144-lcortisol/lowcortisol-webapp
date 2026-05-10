@@ -32,15 +32,22 @@
       "title": "Iniciar sesión",
       "subtitle": "Accede a tu cuenta para continuar con el monitoreo.",
       "forgotPassword": "Recuperar contraseña",
-      "createAccountText": "¿No tienes una cuenta?"
+      "createAccountText": "¿No tienes una cuenta?",
+      "emailPlaceholder": "Ingresa tu correo",
+      "passwordPlaceholder": "Ingresa tu contraseña"
     },
     "register": {
       "title": "Crear cuenta",
-      "subtitle": "Registra tus datos para acceder a la plataforma."
+      "subtitle": "Registra tus datos para acceder a la plataforma.",
+      "fullNamePlaceholder": "Ingresa tu nombre completo",
+      "emailPlaceholder": "Ingresa tu correo",
+      "phonePlaceholder": "Ingresa tu teléfono",
+      "passwordPlaceholder": "Crea una contraseña"
     },
     "recoverPassword": {
       "title": "Recuperar contraseña",
-      "subtitle": "Ingresa tu correo para recibir instrucciones de recuperación."
+      "subtitle": "Ingresa tu correo para recibir instrucciones de recuperación.",
+      "emailPlaceholder": "Ingresa tu correo"
     },
     "fields": {
       "fullName": "Nombre completo",
