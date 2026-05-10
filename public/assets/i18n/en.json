@@ -309,7 +309,7 @@
       "critical": "Critical",
       "unknown": "Unknown priority"
     },
-    "resources": {
+    "resource": {
       "water": "Water",
       "gas": "Gas"
     }
