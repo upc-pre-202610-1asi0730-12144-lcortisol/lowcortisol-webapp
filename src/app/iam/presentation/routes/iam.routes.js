@@ -7,36 +7,41 @@ export const iamRoutes = [
     {
         path: "/login",
         name: "login",
-        component: LoginPage,
+        component: () => import("../pages/login/login-page.component.vue"),
         meta: {
             public: true,
+            titleKey: "pageTitle.login",
             hideNavigation: true,
         },
     },
     {
         path: "/register",
         name: "register",
-        component: RegisterPage,
+        component: () => import("../pages/register/register-page.component.vue"),
         meta: {
             public: true,
+            titleKey: "pageTitle.register",
             hideNavigation: true,
         },
     },
     {
         path: "/recover-password",
         name: "recover-password",
-        component: RecoverPasswordPage,
+        component: () =>
+            import("../pages/recover-password/recover-password-page.component.vue"),
         meta: {
             public: true,
+            titleKey: "pageTitle.recoverPassword",
             hideNavigation: true,
         },
     },
     {
         path: "/profile",
         name: "profile",
-        component: ProfilePage,
+        component: () => import("../pages/profile/profile-page.component.vue"),
         meta: {
             requiresAuth: true,
+            titleKey: "pageTitle.profile",
         },
     },
 ];
