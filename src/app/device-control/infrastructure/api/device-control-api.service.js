@@ -29,17 +29,37 @@ function normalizeSensor(sensor) {
 export class DeviceControlApiService {
     async getDevices() {
         const [devices, sensors, valves, commands] = await Promise.all([
-            ApiClientService.get("/devices"),
-            ApiClientService.get("/sensors"),
-            ApiClientService.get("/valves"),
-            ApiClientService.get("/commands"),
+            this.getRawDevices(),
+            this.getSensors(),
+            this.getValves(),
+            this.getCommands(),
         ]);
 
-        const normalizedSensors = sensors.map(normalizeSensor);
-
         return devices.map((device) =>
-            normalizeDevice(device, normalizedSensors, valves, commands)
+            normalizeDevice(device, sensors, valves, commands)
         );
+    }
+
+    async getDevice() {
+        return this.getDevices();
+    }
+
+    async getRawDevices() {
+        return ApiClientService.get("/devices");
+    }
+
+    async getSensors() {
+        const sensors = await ApiClientService.get("/sensors");
+        return sensors.map(normalizeSensor);
+    }
+
+    async getValves() {
+        const valves = await ApiClientService.get("/valves");
+        return valves.map(normalizeValve);
+    }
+
+    async getCommands() {
+        return ApiClientService.get("/commands");
     }
 
     async createDevice(payload) {
@@ -98,16 +118,12 @@ export class DeviceControlApiService {
         });
     }
 
-    async getCommands() {
-        return ApiClientService.get("/commands");
-    }
-
     async getSummary() {
         const [devices, sensors, valves, commands] = await Promise.all([
-            ApiClientService.get("/devices"),
-            ApiClientService.get("/sensors"),
-            ApiClientService.get("/valves"),
-            ApiClientService.get("/commands"),
+            this.getRawDevices(),
+            this.getSensors(),
+            this.getValves(),
+            this.getCommands(),
         ]);
 
         return {
