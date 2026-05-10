@@ -346,7 +346,9 @@
       "securityCode": "CVV",
       "confirmPurchase": "Confirm purchase",
       "closeForm": "Close form",
-      "noActiveSubscription": "You do not have an active subscription yet. Buy a plan to unlock platform access."
+      "noActiveSubscription": "You do not have an active subscription yet. Buy a plan to unlock platform access.",
+      "serviceRequest": "Service requests",
+      "noRequest": "No service requests registered."
     },
     "status": {
       "active": "Active",
