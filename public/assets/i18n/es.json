@@ -2,6 +2,19 @@
   "app": {
     "name": "LowCortisol"
   },
+  "pageTitle": {
+    "login": "Iniciar sesión",
+    "register": "Crear cuenta",
+    "recoverPassword": "Recuperar contraseña",
+    "profile": "Perfil",
+    "plan": "Planes",
+    "dashboard": "Panel de monitoreo",
+    "site": "Sedes",
+    "device": "Dispositivos",
+    "alert": "Alertas",
+    "report": "Reportes",
+    "support": "Soporte"
+  },
   "nav": {
     "dashboard": "Panel",
     "sites": "Sedes",
