@@ -12,7 +12,8 @@
             <input
                 v-model="form.email"
                 type="email"
-                placeholder="jean@example.com"
+                autocomplete="off"
+                :placeholder="t('auth.recoverPassword.emailPlaceholder')"
             />
           </label>
 
@@ -50,7 +51,7 @@ const { state, recoverPassword } = useIamStore();
 const { t } = useTranslation();
 
 const form = reactive({
-  email: "loarojas1@gmail.com",
+  email: "",
 });
 
 async function handleSubmit() {

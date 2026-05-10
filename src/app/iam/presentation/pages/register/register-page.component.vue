@@ -12,7 +12,8 @@
             <input
                 v-model="form.fullName"
                 type="text"
-                placeholder="Jean Loa"
+                autocomplete="off"
+                :placeholder="t('auth.register.fullNamePlaceholder')"
             />
           </label>
 
@@ -21,7 +22,8 @@
             <input
                 v-model="form.email"
                 type="email"
-                placeholder="jean@example.com"
+                autocomplete="off"
+                :placeholder="t('auth.register.emailPlaceholder')"
             />
           </label>
 
@@ -29,8 +31,9 @@
             <span>{{ t('auth.fields.phone') }}</span>
             <input
                 v-model="form.phone"
-                type="text"
-                placeholder="968673084"
+                type="tel"
+                autocomplete="off"
+                :placeholder="t('auth.register.phonePlaceholder')"
             />
           </label>
 
@@ -39,7 +42,8 @@
             <input
                 v-model="form.password"
                 type="password"
-                placeholder="••••••••"
+                autocomplete="new-password"
+                :placeholder="t('auth.register.passwordPlaceholder')"
             />
           </label>
 
@@ -79,10 +83,10 @@ const { state, signUp } = useIamStore();
 const { t } = useTranslation();
 
 const form = reactive({
-  fullName: "Jean Loa",
-  email: "loarojas1@gmail.com",
-  phone: "968673084",
-  password: "123456",
+  fullName: "",
+  email: "",
+  phone: "",
+  password: "",
 });
 
 async function handleSubmit() {

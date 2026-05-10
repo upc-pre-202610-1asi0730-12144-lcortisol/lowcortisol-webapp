@@ -32,15 +32,22 @@
       "title": "Sign in",
       "subtitle": "Access your account to continue monitoring.",
       "forgotPassword": "Forgot password",
-      "createAccountText": "Don't have an account?"
+      "createAccountText": "Don't have an account?",
+      "emailPlaceholder": "Enter your email",
+      "passwordPlaceholder": "Enter your password"
     },
     "register": {
       "title": "Create account",
-      "subtitle": "Enter your information to access the platform."
+      "subtitle": "Enter your information to access the platform.",
+      "fullNamePlaceholder": "Enter your full name",
+      "emailPlaceholder": "Enter your email",
+      "phonePlaceholder": "Enter your phone number",
+      "passwordPlaceholder": "Create a password"
     },
     "recoverPassword": {
       "title": "Recover password",
-      "subtitle": "Enter your email to receive recovery instructions."
+      "subtitle": "Enter your email to receive recovery instructions.",
+      "emailPlaceholder": "Enter your email"
     },
     "fields": {
       "fullName": "Full name",
