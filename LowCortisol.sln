@@ -6,7 +6,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LowCortisol.Application", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LowCortisol.Infrastructure", "LowCortisol.Infrastructure\LowCortisol.Infrastructure.csproj", "{87D1EE19-8185-41FF-B3A7-6D80D7FF7442}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LowCortisol.Web", "LowCortisol.Web\LowCortisol.Web.csproj", "{616B5B0B-2C3B-482E-A3FD-CBC096A8034A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LowCortisol.Presentation", "LowCortisol.Presentation\LowCortisol.Presentation.csproj", "{616B5B0B-2C3B-482E-A3FD-CBC096A8034A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
