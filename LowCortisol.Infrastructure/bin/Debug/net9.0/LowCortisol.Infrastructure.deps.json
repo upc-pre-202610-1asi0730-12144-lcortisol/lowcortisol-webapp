@@ -1,0 +1,56 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v9.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v9.0": {
+      "LowCortisol.Infrastructure/1.0.0": {
+        "dependencies": {
+          "LowCortisol.Application": "1.0.0",
+          "LowCortisol.Domain": "1.0.0"
+        },
+        "runtime": {
+          "LowCortisol.Infrastructure.dll": {}
+        }
+      },
+      "LowCortisol.Application/1.0.0": {
+        "dependencies": {
+          "LowCortisol.Domain": "1.0.0"
+        },
+        "runtime": {
+          "LowCortisol.Application.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
+      "LowCortisol.Domain/1.0.0": {
+        "runtime": {
+          "LowCortisol.Domain.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "LowCortisol.Infrastructure/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "LowCortisol.Application/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "LowCortisol.Domain/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}
