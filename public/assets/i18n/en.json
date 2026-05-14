@@ -2,6 +2,19 @@
   "app": {
     "name": "LowCortisol"
   },
+  "pageTitle": {
+    "login": "Sign in",
+    "register": "Create account",
+    "recoverPassword": "Recover password",
+    "profile": "Profile",
+    "plan": "Plans",
+    "dashboard": "Monitoring dashboard",
+    "site": "Sites",
+    "device": "Devices",
+    "alert": "Alerts",
+    "report": "Reports",
+    "support": "Support"
+  },
   "nav": {
     "dashboard": "Dashboard",
     "sites": "Sites",
@@ -32,15 +45,22 @@
       "title": "Sign in",
       "subtitle": "Access your account to continue monitoring.",
       "forgotPassword": "Forgot password",
-      "createAccountText": "Don't have an account?"
+      "createAccountText": "Don't have an account?",
+      "emailPlaceholder": "Enter your email",
+      "passwordPlaceholder": "Enter your password"
     },
     "register": {
       "title": "Create account",
-      "subtitle": "Enter your information to access the platform."
+      "subtitle": "Enter your information to access the platform.",
+      "fullNamePlaceholder": "Enter your full name",
+      "emailPlaceholder": "Enter your email",
+      "phonePlaceholder": "Enter your phone number",
+      "passwordPlaceholder": "Create a password"
     },
     "recoverPassword": {
       "title": "Recover password",
-      "subtitle": "Enter your email to receive recovery instructions."
+      "subtitle": "Enter your email to receive recovery instructions.",
+      "emailPlaceholder": "Enter your email"
     },
     "fields": {
       "fullName": "Full name",
@@ -289,7 +309,7 @@
       "critical": "Critical",
       "unknown": "Unknown priority"
     },
-    "resources": {
+    "resource": {
       "water": "Water",
       "gas": "Gas"
     }
@@ -326,7 +346,9 @@
       "securityCode": "CVV",
       "confirmPurchase": "Confirm purchase",
       "closeForm": "Close form",
-      "noActiveSubscription": "You do not have an active subscription yet. Buy a plan to unlock platform access."
+      "noActiveSubscription": "You do not have an active subscription yet. Buy a plan to unlock platform access.",
+      "serviceRequest": "Service requests",
+      "noRequest": "No service requests registered."
     },
     "status": {
       "active": "Active",

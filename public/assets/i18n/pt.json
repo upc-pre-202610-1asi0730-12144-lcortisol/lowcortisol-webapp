@@ -2,6 +2,19 @@
   "app": {
     "name": "LowCortisol"
   },
+  "pageTitle": {
+    "login": "Entrar",
+    "register": "Criar conta",
+    "recoverPassword": "Recuperar senha",
+    "profile": "Perfil",
+    "plan": "Planos",
+    "dashboard": "Painel de monitoramento",
+    "site": "Sedes",
+    "device": "Dispositivos",
+    "alert": "Alertas",
+    "report": "Relatórios",
+    "support": "Suporte"
+  },
   "nav": {
     "dashboard": "Painel",
     "sites": "Sedes",
@@ -32,15 +45,22 @@
       "title": "Entrar",
       "subtitle": "Acesse sua conta para continuar o monitoramento.",
       "forgotPassword": "Recuperar senha",
-      "createAccountText": "Não tem uma conta?"
+      "createAccountText": "Não tem uma conta?",
+      "emailPlaceholder": "Digite seu e-mail",
+      "passwordPlaceholder": "Digite sua senha"
     },
     "register": {
       "title": "Criar conta",
-      "subtitle": "Registre seus dados para acessar a plataforma."
+      "subtitle": "Registre seus dados para acessar a plataforma.",
+      "fullNamePlaceholder": "Digite seu nome completo",
+      "emailPlaceholder": "Digite seu e-mail",
+      "phonePlaceholder": "Digite seu telefone",
+      "passwordPlaceholder": "Crie uma senha"
     },
     "recoverPassword": {
       "title": "Recuperar senha",
-      "subtitle": "Digite seu e-mail para receber instruções de recuperação."
+      "subtitle": "Digite seu e-mail para receber instruções de recuperação.",
+      "emailPlaceholder": "Digite seu e-mail"
     },
     "fields": {
       "fullName": "Nome completo",
@@ -289,7 +309,7 @@
       "critical": "Crítica",
       "unknown": "Sem prioridade"
     },
-    "resources": {
+    "resource": {
       "water": "Água",
       "gas": "Gás"
     }
@@ -326,7 +346,9 @@
       "securityCode": "CVV",
       "confirmPurchase": "Confirmar compra",
       "closeForm": "Fechar formulário",
-      "noActiveSubscription": "Você ainda não tem uma assinatura ativa. Compre um plano para desbloquear o acesso à plataforma."
+      "noActiveSubscription": "Você ainda não tem uma assinatura ativa. Compre um plano para desbloquear o acesso à plataforma.",
+      "serviceRequest": "Solicitações de serviço",
+      "noRequest": "Não há solicitações registradas."
     },
     "status": {
       "active": "Ativa",

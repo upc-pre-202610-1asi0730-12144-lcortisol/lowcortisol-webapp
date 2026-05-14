@@ -86,7 +86,7 @@ export class PlanApiService {
             updatedAt: new Date().toISOString(),
         });
 
-        await ApiClientService.post("/serviceRequest", {
+        await ApiClientService.post("/serviceRequests", {
             subscriptionId: activeSubscription.id,
             type: "change-plan",
             description: `Cambio solicitado al plan ${plan.name}.`,
@@ -111,7 +111,7 @@ export class PlanApiService {
             updatedAt: new Date().toISOString(),
         });
 
-        await ApiClientService.post("/serviceRequest", {
+        await ApiClientService.post("/serviceRequests", {
             subscriptionId: activeSubscription.id,
             type: "cancellation",
             description: payload.reason || "Cancelación solicitada por el usuario.",
@@ -144,7 +144,7 @@ export class PlanApiService {
         });
 
         const subscriptionIds = subscriptions.map((subscription) => subscription.id);
-        const request = await ApiClientService.get("/serviceRequest");
+        const request = await ApiClientService.get("/serviceRequests");
 
         return request.filter((request) => subscriptionIds.includes(request.subscriptionId));
     }

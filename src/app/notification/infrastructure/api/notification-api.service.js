@@ -5,6 +5,10 @@ export class NotificationApiService {
         return ApiClientService.get("/alerts");
     }
 
+    async getAlert() {
+        return this.getAlerts();
+    }
+
     async createAlert(payload) {
         const alert = await ApiClientService.post("/alerts", {
             siteId: payload.siteId,
@@ -53,6 +57,10 @@ export class NotificationApiService {
         return ApiClientService.get("/thresholds");
     }
 
+    async getThreshold() {
+        return this.getThresholds();
+    }
+
     async createThreshold(payload) {
         return ApiClientService.post("/thresholds", {
             siteId: payload.siteId,
@@ -71,12 +79,24 @@ export class NotificationApiService {
         return ApiClientService.get("/incidents");
     }
 
+    async getIncident() {
+        return this.getIncidents();
+    }
+
     async getNotificationChannels() {
         return ApiClientService.get("/notificationChannels");
     }
 
+    async getChannels() {
+        return this.getNotificationChannels();
+    }
+
     async getAlertDeliveries() {
         return ApiClientService.get("/alertDeliveries");
+    }
+
+    async getDeliveries() {
+        return this.getAlertDeliveries();
     }
 
     async sendAlert(alertId) {
@@ -101,11 +121,11 @@ export class NotificationApiService {
 
     async getSummary() {
         const [alerts, thresholds, incidents, channels, deliveries] = await Promise.all([
-            ApiClientService.get("/alerts"),
-            ApiClientService.get("/thresholds"),
-            ApiClientService.get("/incidents"),
-            ApiClientService.get("/notificationChannels"),
-            ApiClientService.get("/alertDeliveries"),
+            this.getAlerts(),
+            this.getThresholds(),
+            this.getIncidents(),
+            this.getNotificationChannels(),
+            this.getAlertDeliveries(),
         ]);
 
         return {

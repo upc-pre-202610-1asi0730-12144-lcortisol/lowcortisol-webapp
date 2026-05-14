@@ -12,7 +12,8 @@
             <input
                 v-model="form.email"
                 type="email"
-                placeholder="jean@example.com"
+                autocomplete="off"
+                :placeholder="t('auth.login.emailPlaceholder')"
             />
           </label>
 
@@ -21,7 +22,8 @@
             <input
                 v-model="form.password"
                 type="password"
-                placeholder="••••••••"
+                autocomplete="new-password"
+                :placeholder="t('auth.login.passwordPlaceholder')"
             />
           </label>
 
@@ -67,13 +69,13 @@ const { state, signIn } = useIamStore();
 const { t } = useTranslation();
 
 const form = reactive({
-  email: "loarojas1@gmail.com",
-  password: "123456",
+  email: "",
+  password: "",
 });
 
 async function handleSubmit() {
   await signIn(form);
-  await router.push({ name: "dashboard" });
+  await router.push({ name: "plans" });
 }
 </script>
 
