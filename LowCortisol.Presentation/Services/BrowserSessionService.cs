@@ -1,30 +1,41 @@
-﻿using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
+﻿using Microsoft.JSInterop;
 
 namespace LowCortisol.Presentation.Services;
 
 public class BrowserSessionService
 {
-    private const string UserIdKey = "lowcortisol.user-id";
-    private readonly ProtectedLocalStorage _storage;
+    private const string UserIdKey = "app_user_id";
+    private readonly IJSRuntime _jsRuntime;
 
-    public BrowserSessionService(ProtectedLocalStorage storage)
+    public BrowserSessionService(IJSRuntime jsRuntime)
     {
-        _storage = storage;
+        _jsRuntime = jsRuntime;
     }
 
     public async Task SaveUserIdAsync(Guid userId)
     {
-        await _storage.SetAsync(UserIdKey, userId);
+        await _jsRuntime.InvokeVoidAsync("localStorage.setItem", UserIdKey, userId.ToString());
     }
 
     public async Task<Guid?> GetUserIdAsync()
     {
-        var result = await _storage.GetAsync<Guid>(UserIdKey);
-        return result.Success ? result.Value : null;
+        try
+        {
+            var value = await _jsRuntime.InvokeAsync<string?>("localStorage.getItem", UserIdKey);
+
+            if (string.IsNullOrWhiteSpace(value))
+                return null;
+
+            return Guid.TryParse(value, out var id) ? id : null;
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     public async Task ClearAsync()
     {
-        await _storage.DeleteAsync(UserIdKey);
+        await _jsRuntime.InvokeVoidAsync("localStorage.removeItem", UserIdKey);
     }
 }

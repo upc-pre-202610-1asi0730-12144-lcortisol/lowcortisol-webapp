@@ -33,6 +33,12 @@
   "auth.phone": "TELEFONE",
   "auth.accountType": "TIPO DE CONTA",
   "auth.back": "Voltar ao login",
+  "auth.login.emailPlaceholder": "email@exemplo.com",
+  "auth.login.passwordPlaceholder": "Digite sua senha",
+  "auth.register.namePlaceholder": "Digite seu nome completo",
+  "auth.register.emailPlaceholder": "email@exemplo.com",
+  "auth.register.phonePlaceholder": "Digite seu número de telefone",
+  "auth.register.passwordPlaceholder": "Crie uma senha",
 
   "home.title": "Painel",
   "home.welcome": "Bem-vindo de volta",
