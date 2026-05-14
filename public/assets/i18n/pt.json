@@ -1,0 +1,407 @@
+{
+  "app": {
+    "name": "LowCortisol"
+  },
+  "nav": {
+    "dashboard": "Painel",
+    "sites": "Sedes",
+    "devices": "Equipamentos",
+    "alerts": "Alertas",
+    "reports": "Relatórios",
+    "plans": "Planos",
+    "support": "Suporte",
+    "profile": "Perfil"
+  },
+  "actions": {
+    "saveChanges": "Salvar alterações",
+    "cancel": "Cancelar",
+    "closeSession": "Sair",
+    "create": "Criar",
+    "update": "Atualizar",
+    "send": "Enviar",
+    "enter": "Acessar",
+    "register": "Registrar",
+    "recover": "Enviar recuperação",
+    "backToLogin": "Voltar ao login",
+    "createAccount": "Criar conta",
+    "alreadyHaveAccount": "Já tenho uma conta",
+    "updateProfile": "Atualizar perfil"
+  },
+  "auth": {
+    "login": {
+      "title": "Entrar",
+      "subtitle": "Acesse sua conta para continuar o monitoramento.",
+      "forgotPassword": "Recuperar senha",
+      "createAccountText": "Não tem uma conta?"
+    },
+    "register": {
+      "title": "Criar conta",
+      "subtitle": "Registre seus dados para acessar a plataforma."
+    },
+    "recoverPassword": {
+      "title": "Recuperar senha",
+      "subtitle": "Digite seu e-mail para receber instruções de recuperação."
+    },
+    "fields": {
+      "fullName": "Nome completo",
+      "email": "E-mail",
+      "phone": "Telefone",
+      "password": "Senha"
+    },
+    "messages": {
+      "profileUpdated": "Perfil atualizado com sucesso."
+    }
+  },
+  "profile": {
+    "title": "Perfil",
+    "subtitle": "Gerencie suas informações pessoais, sessão ativa e perfil de acesso.",
+    "user": "Usuário",
+    "accessProfile": "Perfil de acesso",
+    "updateData": "Atualizar dados",
+    "activeSession": "Sessão ativa",
+    "technicalTraceability": "Rastreabilidade técnica",
+    "name": "Nome",
+    "role": "Função",
+    "permissions": "Permissões",
+    "status": "Estado",
+    "token": "Token",
+    "active": "Ativa",
+    "available": "Disponível"
+  },
+  "monitoring": {
+    "dashboard": {
+      "title": "Painel de monitoramento",
+      "subtitle": "Estado geral de consumo, sensores, sessões ativas e anomalias detectadas.",
+      "simulateReading": "Simular leitura",
+      "waterMonitored": "Água monitorada",
+      "gasMonitored": "Gás monitorado",
+      "criticalAnomalies": "Anomalias críticas",
+      "recentReadings": "Leituras recentes",
+      "activeSession": "Sessão ativa",
+      "anomalies": "Anomalias",
+      "noAnomalies": "Não há anomalias registradas.",
+      "status": "Estado",
+      "active": "Ativa",
+      "finished": "Finalizada",
+      "totalReadings": "Total de leituras",
+      "detectedAnomalies": "Anomalias detectadas"
+    },
+    "reports": {
+      "title": "Relatórios",
+      "subtitle": "Histórico e relatórios de consumo gerados a partir das leituras monitoradas.",
+      "generateReport": "Gerar relatório",
+      "generatedReports": "Relatórios gerados",
+      "availableReadings": "Leituras disponíveis",
+      "anomalies": "Anomalias",
+      "consumptionReports": "Relatórios de consumo",
+      "baseReadings": "Leituras base",
+      "noReports": "Ainda não há relatórios gerados.",
+      "site": "Sede"
+    },
+    "resources": {
+      "water": "Água",
+      "gas": "Gás"
+    },
+    "status": {
+      "normal": "Normal",
+      "warning": "Aviso",
+      "critical": "Crítico",
+      "open": "Aberta",
+      "resolved": "Resolvida",
+      "closed": "Fechada"
+    },
+    "periods": {
+      "daily": "Diário",
+      "weekly": "Semanal",
+      "monthly": "Mensal",
+      "custom": "Personalizado"
+    }
+  },
+  "workplace": {
+    "sites": {
+      "title": "Sedes",
+      "subtitle": "Gerencie suas sedes, responsáveis, dispositivos atribuídos e métricas consolidadas.",
+      "registerSite": "Registrar sede",
+      "all": "Todas",
+      "residential": "Residencial",
+      "business": "Empresarial",
+      "industrial": "Industrial",
+      "registeredSites": "Sedes registradas",
+      "activeSites": "Sedes ativas",
+      "assignedDevices": "Dispositivos atribuídos",
+      "sitesList": "Lista de sedes",
+      "siteDetail": "Detalhe da sede",
+      "assignedMembers": "Responsáveis atribuídos",
+      "assignedDevicesTitle": "Dispositivos atribuídos",
+      "summary": "Resumo consolidado",
+      "domainModel": "Modelo de domínio",
+      "loading": "Carregando sedes...",
+      "emptySites": "Não há sedes registradas com o filtro selecionado.",
+      "selectSite": "Selecione uma sede para ver os detalhes.",
+      "noMembers": "Não há responsáveis atribuídos a esta sede.",
+      "noDevices": "Não há dispositivos atribuídos a esta sede.",
+      "assignMember": "Atribuir responsável",
+      "assignDevice": "Atribuir dispositivo",
+      "waterConsumption": "Consumo de água",
+      "gasConsumption": "Consumo de gás",
+      "activeSensors": "Sensores ativos",
+      "activeIncidents": "Incidentes ativos",
+      "totalWater": "Água total monitorada",
+      "totalGas": "Gás total monitorado",
+      "registeredMembers": "Membros registrados",
+      "maintenanceSites": "Sedes em manutenção",
+      "newSite": "Nova sede",
+      "pendingAddress": "Endereço pendente"
+    },
+    "status": {
+      "active": "Ativa",
+      "inactive": "Inativa",
+      "maintenance": "Manutenção",
+      "unknown": "Sem estado"
+    },
+    "roles": {
+      "owner": "Proprietário",
+      "admin": "Administrador",
+      "operator": "Operador",
+      "viewer": "Visualizador",
+      "unknown": "Sem função"
+    },
+    "deviceTypes": {
+      "sensor": "Sensor",
+      "valve": "Válvula",
+      "hub": "Hub",
+      "device": "Dispositivo"
+    }
+  },
+  "deviceControl": {
+    "devices": {
+      "title": "Dispositivos",
+      "subtitle": "Controle hubs, sensores, válvulas e comandos remotos associados às suas sedes.",
+      "addDevice": "Adicionar dispositivo",
+      "registeredDevices": "Dispositivos registrados",
+      "activeSensors": "Sensores ativos",
+      "closedValves": "Válvulas fechadas",
+      "devicesList": "Lista de dispositivos",
+      "deviceDetail": "Detalhe do dispositivo",
+      "linkedSensors": "Sensores vinculados",
+      "valveControl": "Controle de válvulas",
+      "recentCommands": "Comandos recentes",
+      "loading": "Carregando dispositivos...",
+      "selectDevice": "Selecione um dispositivo para ver os detalhes.",
+      "noSensors": "Não há sensores vinculados a este dispositivo.",
+      "noValves": "Não há válvulas disponíveis para este dispositivo.",
+      "noCommands": "Ainda não há comandos executados.",
+      "linkedSensorsCount": "Sensores vinculados",
+      "availableValves": "Válvulas disponíveis",
+      "executedCommands": "Comandos executados",
+      "syncDevice": "Sincronizar dispositivo",
+      "linkSensor": "Vincular sensor",
+      "additionalHub": "Hub adicional",
+      "linkedSensor": "Sensor vinculado",
+      "mainHub": "Hub Principal",
+      "site": "Sede"
+    },
+    "types": {
+      "hub": "Hub",
+      "sensor": "Sensor",
+      "valve": "Válvula",
+      "device": "Dispositivo"
+    },
+    "resources": {
+      "water": "Água",
+      "gas": "Gás"
+    },
+    "status": {
+      "online": "Online",
+      "offline": "Desconectado",
+      "maintenance": "Manutenção",
+      "open": "Aberta",
+      "closed": "Fechada",
+      "active": "Ativo",
+      "inactive": "Inativo",
+      "unknown": "Sem estado"
+    },
+    "commands": {
+      "sync": "Sincronizar",
+      "closeValve": "Fechar válvula",
+      "openValve": "Abrir válvula",
+      "reboot": "Reiniciar",
+      "command": "Comando",
+      "pending": "Pendente",
+      "executed": "Executado",
+      "failed": "Falhou"
+    },
+    "actions": {
+      "open": "Abrir",
+      "close": "Fechar"
+    },
+    "sensor": {
+      "thresholdExceeded": "Limite excedido",
+      "normal": "Normal"
+    }
+  },
+  "notifications": {
+    "alerts": {
+      "title": "Alertas",
+      "subtitle": "Gerencie alertas, limites, incidentes e canais de notificação.",
+      "createAlert": "Criar alerta",
+      "registeredAlerts": "Alertas registradas",
+      "criticalAlerts": "Alertas críticas",
+      "openIncidents": "Incidentes abertos",
+      "activeAlerts": "Alertas ativas",
+      "configuredThresholds": "Limites configurados",
+      "incidents": "Incidentes",
+      "channelsAndDeliveries": "Canais e envios",
+      "loading": "Carregando alertas...",
+      "noAlerts": "Não há alertas registradas.",
+      "noThresholds": "Não há limites configurados.",
+      "noIncidents": "Não há incidentes gerados.",
+      "createThreshold": "Criar limite",
+      "enabledChannels": "Canais ativos",
+      "sentAlerts": "Alertas enviadas",
+      "activeThresholds": "Limites ativos",
+      "automaticAlert": "Alerta automática",
+      "automaticDescription": "Foi detectada uma leitura fora do intervalo esperado.",
+      "incidentPrefix": "Incidente"
+    },
+    "actions": {
+      "resolve": "Resolver",
+      "close": "Fechar",
+      "send": "Enviar"
+    },
+    "severity": {
+      "info": "Informativa",
+      "warning": "Aviso",
+      "critical": "Crítica",
+      "unknown": "Sem severidade"
+    },
+    "status": {
+      "open": "Aberta",
+      "assigned": "Atribuída",
+      "resolved": "Resolvida",
+      "closed": "Fechada",
+      "unknown": "Sem estado"
+    },
+    "priority": {
+      "low": "Baixa",
+      "medium": "Média",
+      "high": "Alta",
+      "critical": "Crítica",
+      "unknown": "Sem prioridade"
+    },
+    "resources": {
+      "water": "Água",
+      "gas": "Gás"
+    }
+  },
+  "plans": {
+    "page": {
+      "title": "Planos",
+      "subtitle": "Gerencie sua assinatura, benefícios, pagamentos e solicitações de serviço.",
+      "cancelSubscription": "Cancelar assinatura",
+      "activePlan": "Plano ativo",
+      "capacity": "Capacidade",
+      "payments": "Pagamentos",
+      "allowedSites": "Sedes permitidas",
+      "totalPaid": "Total pago",
+      "paymentHistory": "Histórico de pagamentos",
+      "serviceRequests": "Solicitações de serviço",
+      "noPayments": "Não há pagamentos registrados.",
+      "noRequests": "Não há solicitações registradas.",
+      "choosePlan": "Escolher plano",
+      "currentPlan": "Plano ativo",
+      "recommended": "Recomendado",
+      "monthly": "mensal",
+      "yearly": "anual",
+      "period": "período",
+      "sites": "sede(s)",
+      "devices": "dispositivo(s)",
+      "buyPlan": "Comprar plano",
+      "checkoutTitle": "Comprar assinatura",
+      "checkoutSubtitle": "Complete os dados de pagamento para ativar seu plano.",
+      "selectedPlan": "Plano selecionado",
+      "cardholderName": "Nome do titular",
+      "cardNumber": "Número do cartão",
+      "expirationDate": "Data de validade",
+      "securityCode": "CVV",
+      "confirmPurchase": "Confirmar compra",
+      "closeForm": "Fechar formulário",
+      "noActiveSubscription": "Você ainda não tem uma assinatura ativa. Compre um plano para desbloquear o acesso à plataforma."
+    },
+    "status": {
+      "active": "Ativa",
+      "cancelled": "Cancelada",
+      "suspended": "Suspensa",
+      "expired": "Expirada",
+      "unknown": "Sem estado",
+      "paid": "Pago",
+      "pending": "Pendente",
+      "failed": "Falhou",
+      "refunded": "Reembolsado"
+    },
+    "requests": {
+      "changePlan": "Mudança de plano",
+      "cancellation": "Cancelamento",
+      "support": "Suporte",
+      "request": "Solicitação"
+    }
+  },
+  "support": {
+    "page": {
+      "title": "Suporte",
+      "subtitle": "Gerencie tickets, mensagens e artigos de ajuda para resolver incidentes.",
+      "createTicket": "Criar ticket",
+      "tickets": "Tickets",
+      "agents": "Agentes",
+      "help": "Ajuda",
+      "registeredTickets": "Tickets registrados",
+      "availableAgents": "Agentes disponíveis",
+      "publishedArticles": "Artigos publicados",
+      "supportTickets": "Tickets de suporte",
+      "ticketDetail": "Detalhe do ticket",
+      "helpArticles": "Artigos de ajuda",
+      "loadingTickets": "Carregando tickets...",
+      "selectTicket": "Selecione um ticket para ver sua conversa.",
+      "writeMessage": "Escreva uma mensagem...",
+      "send": "Enviar",
+      "resolve": "Resolver",
+      "close": "Fechar",
+      "supportRequest": "Solicitação de suporte",
+      "supportRequestDescription": "Preciso de ajuda com uma configuração do sistema."
+    },
+    "category": {
+      "technical": "Técnico",
+      "billing": "Faturamento",
+      "device": "Dispositivo",
+      "incident": "Incidente",
+      "alerts": "Alertas",
+      "support": "Suporte"
+    },
+    "priority": {
+      "low": "Baixa",
+      "medium": "Média",
+      "high": "Alta",
+      "critical": "Crítica",
+      "unknown": "Sem prioridade"
+    },
+    "status": {
+      "open": "Aberto",
+      "assigned": "Atribuído",
+      "resolved": "Resolvido",
+      "closed": "Fechado",
+      "available": "Disponível",
+      "busy": "Ocupado",
+      "offline": "Desconectado",
+      "unknown": "Sem estado"
+    },
+    "sender": {
+      "user": "Usuário",
+      "agent": "Agente",
+      "system": "Sistema",
+      "unknown": "Remetente"
+    },
+    "article": {
+      "helpful": "úteis"
+    }
+  }
+}

@@ -1,286 +1,1099 @@
-﻿@startuml
-skinparam classAttributeIconSize 0
+@startuml
+title LowCortisol Platform - Frontend Class Diagram
+
 skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
 skinparam shadowing false
 skinparam linetype ortho
 
-title LowCortisol - Frontend Class Diagram
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #1F2937
+  ArrowColor #1F2937
+}
 
-package "Presentation" {
+skinparam package {
+  BackgroundColor #F8FAFC
+  BorderColor #CBD5E1
+}
 
-  package "Pages" {
-    class LoginPage {
-      - email : string
-      - password : string
-      - errorMessage : string
-      - isSubmitting : bool
-      - _checkedSession : bool
-      + SignInAsync()
-      + OnAfterRenderAsync(firstRender)
+skinparam note {
+  BackgroundColor #EFF6FF
+  BorderColor #60A5FA
+}
+
+' ==========================================================
+' SHARED
+' ==========================================================
+
+package "shared" {
+  package "presentation/component" {
+    class AppLayout <<Vue Component>> {
+      +render()
+      +hideNavigation
     }
 
-    class RegisterPage {
-      - name : string
-      - email : string
-      - phone : string
-      - password : string
-      - role : string
-      - errorMessage : string
-      - isSubmitting : bool
-      - _checkedSession : bool
-      + RegisterAsync()
-      + OnAfterRenderAsync(firstRender)
+    class BottomNavigation <<Vue Component>> {
+      +items
+      +render()
     }
 
-    class HomePage {
-      - _checkedSession : bool
-      + OnAfterRenderAsync(firstRender)
+    class LanguageSwitcher <<Vue Component>> {
+      +languages
+      +handleLanguageChange(language)
     }
 
-    class DevicesPage {
-      - devices : List<DeviceDto>
-      - showCreatePanel : bool
-      - isSubmitting : bool
-      - errorMessage : string
-      - fatalError : string
-      - _checkedSession : bool
-      - isLoadingPage : bool
-      - newDeviceName : string
-      - newDeviceType : string
-      - newDeviceStatus : string
-      - newDeviceLocation : string
-      - newThresholdValue : decimal?
-      - newThresholdUnit : string?
-      + LoadDevicesAsync()
-      + OpenCreatePanel()
-      + CloseCreatePanel()
-      + CreateDeviceAsync()
-      + ChangeStatusAsync(deviceId, status)
-      + OnAfterRenderAsync(firstRender)
-    }
-
-    class ReportsPage {
-      - reports : List<ConsumptionReportDto>
-      - showGeneratePanel : bool
-      - isSubmitting : bool
-      - errorMessage : string
-      - fatalError : string
-      - selectedPeriod : string
-      - _checkedSession : bool
-      - isLoadingPage : bool
-      - newPeriod : string
-      - newWaterTotal : decimal
-      - newWaterUnit : string
-      - newGasTotal : decimal
-      - newGasUnit : string
-      + LoadReportsAsync()
-      + OpenGeneratePanel()
-      + CloseGeneratePanel()
-      + GenerateReportAsync()
-      + SelectPeriodAsync(period)
-      + BuildBars()
-      + OnAfterRenderAsync(firstRender)
-    }
-
-    class AlertsPage {
-      - incidents : List<IncidentDto>
-      - devices : List<DeviceDto>
-      - showCreatePanel : bool
-      - isSubmitting : bool
-      - errorMessage : string
-      - fatalError : string
-      - _checkedSession : bool
-      - isLoadingPage : bool
-      - selectedDeviceId : string
-      - newSeverity : string
-      - newDescription : string
-      + LoadDevicesAsync()
-      + LoadIncidentsAsync()
-      + OpenCreatePanel()
-      + CloseCreatePanel()
-      + CreateIncidentAsync()
-      + AssignToCurrentUserAsync(incidentId)
-      + UpdateStatusAsync(incidentId, status, note)
-      + OnAfterRenderAsync(firstRender)
-    }
-
-    class ProfilePage {
-      - _checkedSession : bool
-      + SignOut()
-      + TranslateRole(role)
-      + GetPermissionSummary(role)
-      + OnAfterRenderAsync(firstRender)
+    class UiCard <<Vue Component>> {
+      +title
+      +compact
+      +render()
     }
   }
 
-  package "Layout" {
-    class MainLayout {
-      + SetLanguage(language)
-      + GetLangButtonClass(language)
-      + IsPublicPage()
-      + Refresh()
+  package "application/service" {
+    class TranslationService {
+      +initialize()
+      +setLanguage(language)
+      +getLanguage()
+      +translate(key)
+    }
+
+    class AuthSessionService {
+      +signIn(user)
+      +signOut()
+      +isAuthenticated()
+      +getCurrentUser()
+      +setCurrentUser(user)
+    }
+
+    class SubscriptionAccessService {
+      +hasActiveSubscription()
+      +getActiveSubscription()
+    }
+
+    class ThemeService {
+      +initialize()
+      +setTheme(theme)
+      +getTheme()
     }
   }
 
-  package "Services" {
-    class I18nService {
-      - _translations : Dictionary<String,String>
-      + CurrentLanguage : string
-      + OnChange : Action
-      + this[key] : string
-      + SetLanguageAsync(language)
-      - LoadLanguage(language)
-    }
-
-    class BrowserSessionService {
-      - UserIdKey : string
-      + SaveUserIdAsync(userId)
-      + GetUserIdAsync()
-      + ClearAsync()
-    }
-
-    class UiSessionService {
-      + IsAuthenticated : bool
-      + CurrentUser : UserDto
-      + OnChange : Action
-      + SignIn(user)
-      + SignOut()
+  package "infrastructure/http" {
+    class ApiClientService {
+      +get(path, query)
+      +post(path, body)
+      +patch(path, body)
+      +put(path, body)
+      +delete(path)
     }
   }
 
-  package "Shared View Models / UI Models" {
-    class ChartBarVm {
-      + Label : string
-      + WaterHeight : int
-      + GasHeight : int
-      + WaterValueText : string
-      + GasValueText : string
+  package "router" {
+    class RouterGuard {
+      +beforeEach(to)
+      +requiresAuth
+      +requiresSubscription
     }
   }
 }
 
-package "Application Contracts" {
-  interface IIdentityAccessService {
-    + RegisterAsync(command)
-    + LoginAsync(command)
-    + GetByIdAsync(id)
+' ==========================================================
+' IAM
+' ==========================================================
+
+package "iam" {
+  package "presentation/page" {
+    class LoginPage <<Vue Page>> {
+      +form
+      +handleSubmit()
+    }
+
+    class RegisterPage <<Vue Page>> {
+      +form
+      +handleSubmit()
+    }
+
+    class RecoverPasswordPage <<Vue Page>> {
+      +form
+      +handleSubmit()
+    }
+
+    class ProfilePage <<Vue Page>> {
+      +form
+      +handleSaveProfile()
+      +handleSignOut()
+    }
   }
 
-  interface IDeviceManagementService {
-    + RegisterAsync(command)
-    + UpdateStatusAsync(command)
-    + GetByOwnerAsync(ownerUserId)
+  package "application/store" {
+    class IamStore {
+      +state
+      +signIn(payload)
+      +signUp(payload)
+      +recoverPassword(payload)
+      +loadSession()
+      +updateProfile(payload)
+      +signOut()
+    }
   }
 
-  interface IIncidentManagementService {
-    + CreateAsync(command)
-    + AssignAsync(command)
-    + UpdateStatusAsync(command)
-    + GetByDeviceAsync(deviceId)
+  package "application/service" {
+    class IamFacade {
+      -iamApiService
+      +signIn(payload)
+      +signUp(payload)
+      +recoverPassword(payload)
+      +getProfile()
+      +getAccessProfile()
+      +getSession()
+      +updateProfile(payload)
+      +signOut()
+    }
   }
 
-  interface IReportingService {
-    + GenerateAsync(command)
-    + GetByOwnerAsync(ownerUserId)
-    + GetByOwnerAndPeriodAsync(ownerUserId, period)
+  package "infrastructure/api" {
+    class IamApiService {
+      +signIn(payload)
+      +signUp(payload)
+      +recoverPassword(payload)
+      +getProfile()
+      +getAccessProfile()
+      +getSession()
+      +updateProfile(payload)
+      +signOut()
+    }
   }
 
-  class UserDto {
-    + Id : Guid
-    + Name : string
-    + Email : string
-    + Phone : string
-    + Role : string
-    + IsActive : bool
-  }
+  package "domain/model" {
+    class User {
+      +id
+      +fullName
+      +email
+      +phone
+      +status
+      +accessProfileId
+      +initials
+      +statusLabel
+    }
 
-  class DeviceDto {
-    + Id : Guid
-    + Name : string
-    + Type : string
-    + Status : string
-    + Location : string
-    + SensorsCount : int
-    + ThresholdValue : decimal?
-    + ThresholdUnit : string
-  }
+    class AccessProfile {
+      +id
+      +name
+      +role
+      +permission
+      +roleLabel
+    }
 
-  class IncidentDto {
-    + Id : Guid
-    + DeviceId : Guid
-    + ReportedByUserId : Guid
-    + AssignedUserId : Guid?
-    + Severity : string
-    + Status : string
-    + Description : string
-    + CreatedAtUtc : DateTime
-    + History : IReadOnlyCollection<string>
-  }
-
-  class ConsumptionReportDto {
-    + Id : Guid
-    + OwnerUserId : Guid
-    + Period : string
-    + TotalWaterConsumption : decimal
-    + TotalWaterUnit : string
-    + TotalGasConsumption : decimal
-    + TotalGasUnit : string
-    + GeneratedAtUtc : DateTime
+    class AuthSession {
+      +id
+      +userId
+      +token
+      +isActive
+      +canAccess
+    }
   }
 }
 
-MainLayout ..> I18nService
-MainLayout ..> UiSessionService
+' ==========================================================
+' PLAN
+' ==========================================================
 
-LoginPage ..> IIdentityAccessService
-LoginPage ..> BrowserSessionService
-LoginPage ..> UiSessionService
-LoginPage ..> I18nService
+package "plan" {
+  package "presentation/page" {
+    class PlanPage <<Vue Page>> {
+      +selectedPlan
+      +checkout
+      +openCheckout(plan)
+      +closeCheckout()
+      +handlePurchase()
+      +handleCardNumberInput(event)
+      +handleExpirationDateInput(event)
+      +handleSecurityCodeInput(event)
+      +isExpirationDateValid(expirationDate)
+    }
+  }
 
-RegisterPage ..> IIdentityAccessService
-RegisterPage ..> BrowserSessionService
-RegisterPage ..> UiSessionService
-RegisterPage ..> I18nService
+  package "presentation/component" {
+    class PlanCard <<Vue Component>> {
+      +plan
+      +active
+      +getBillingPeriodLabel(period)
+      +emitBuy(plan)
+    }
+  }
 
-HomePage ..> IIdentityAccessService
-HomePage ..> BrowserSessionService
-HomePage ..> UiSessionService
-HomePage ..> I18nService
+  package "application/store" {
+    class PlanStore {
+      +state
+      +loadPlanPage()
+      +subscribeToPlan(planId)
+      +changePlan(planId)
+      +cancelSubscription()
+      +getActivePlan()
+    }
+  }
 
-DevicesPage ..> IIdentityAccessService
-DevicesPage ..> IDeviceManagementService
-DevicesPage ..> BrowserSessionService
-DevicesPage ..> UiSessionService
-DevicesPage ..> I18nService
-DevicesPage ..> DeviceDto
+  package "application/service" {
+    class PlanFacade {
+      -planApiService
+      +getPlan()
+      +getPlanById(planId)
+      +getActiveSubscription()
+      +subscribe(payload)
+      +changePlan(payload)
+      +cancelSubscription(payload)
+      +getPayment()
+      +getServiceRequest()
+      +getSummary()
+    }
+  }
 
-ReportsPage ..> IIdentityAccessService
-ReportsPage ..> IReportingService
-ReportsPage ..> BrowserSessionService
-ReportsPage ..> UiSessionService
-ReportsPage ..> I18nService
-ReportsPage ..> ConsumptionReportDto
-ReportsPage ..> ChartBarVm
+  package "infrastructure/api" {
+    class PlanApiService {
+      +getPlan()
+      +getPlanById(planId)
+      +getActiveSubscription()
+      +subscribe(payload)
+      +changePlan(payload)
+      +cancelSubscription(payload)
+      +getPayment()
+      +getServiceRequest()
+      +getSummary()
+    }
+  }
 
-AlertsPage ..> IIdentityAccessService
-AlertsPage ..> IIncidentManagementService
-AlertsPage ..> IDeviceManagementService
-AlertsPage ..> BrowserSessionService
-AlertsPage ..> UiSessionService
-AlertsPage ..> I18nService
-AlertsPage ..> IncidentDto
-AlertsPage ..> DeviceDto
+  package "domain/model" {
+    class Plan {
+      +id
+      +name
+      +code
+      +description
+      +price
+      +currency
+      +billingPeriod
+      +maxSite
+      +maxDevice
+      +recommended
+      +feature
+    }
 
-ProfilePage ..> IIdentityAccessService
-ProfilePage ..> BrowserSessionService
-ProfilePage ..> UiSessionService
-ProfilePage ..> I18nService
-ProfilePage ..> UserDto
+    class PlanFeature {
+      +id
+      +planId
+      +name
+      +description
+      +included
+    }
 
-UiSessionService o-- UserDto
-DevicesPage o-- DeviceDto
-ReportsPage o-- ConsumptionReportDto
-AlertsPage o-- IncidentDto
-AlertsPage o-- DeviceDto
+    class Subscription {
+      +id
+      +userId
+      +workplaceId
+      +planId
+      +status
+      +startedAt
+      +autoRenew
+    }
+
+    class Payment {
+      +id
+      +subscriptionId
+      +amount
+      +currency
+      +method
+      +status
+      +paidAt
+    }
+
+    class ServiceRequest {
+      +id
+      +subscriptionId
+      +type
+      +description
+      +status
+    }
+  }
+}
+
+' ==========================================================
+' WORKPLACE
+' ==========================================================
+
+package "workplace" {
+  package "presentation/page" {
+    class SitePage <<Vue Page>> {
+      +selectedType
+      +selectedSite
+      +handleFilterChange(type)
+      +handleCreateSite()
+      +handleAssignMember()
+      +handleAssignDevice()
+    }
+  }
+
+  package "presentation/component" {
+    class SiteFilter <<Vue Component>> {
+      +modelValue
+      +option
+      +emitUpdateModelValue(value)
+    }
+  }
+
+  package "application/store" {
+    class WorkplaceStore {
+      +state
+      +loadWorkplace()
+      +filterSiteByType(type)
+      +selectSite(siteId)
+      +createSite(payload)
+      +assignMemberToSite(payload)
+      +assignDeviceToSite(payload)
+      +getSelectedSite()
+    }
+  }
+
+  package "application/service" {
+    class WorkplaceFacade {
+      -workplaceApiService
+      +getWorkplace()
+      +getSite(type)
+      +getSiteById(siteId)
+      +createSite(payload)
+      +assignMemberToSite(payload)
+      +assignDeviceToSite(payload)
+      +getMemberBySite(siteId)
+      +getAssignmentBySite(siteId)
+      +getSummary()
+    }
+  }
+
+  package "infrastructure/api" {
+    class WorkplaceApiService {
+      +getWorkplace()
+      +getSite(type)
+      +getSiteById(siteId)
+      +createSite(payload)
+      +assignMemberToSite(payload)
+      +assignDeviceToSite(payload)
+      +getMemberBySite(siteId)
+      +getAssignmentBySite(siteId)
+      +getSummary()
+    }
+  }
+
+  package "domain/model" {
+    class Workplace {
+      +id
+      +ownerId
+      +name
+      +description
+    }
+
+    class Site {
+      +id
+      +workplaceId
+      +name
+      +address
+      +type
+      +status
+      +waterConsumption
+      +gasConsumption
+      +activeSensor
+      +activeIncident
+    }
+
+    class SiteMember {
+      +id
+      +siteId
+      +userId
+      +fullName
+      +email
+      +role
+    }
+
+    class SiteDeviceAssignment {
+      +id
+      +siteId
+      +deviceId
+      +deviceName
+      +deviceType
+      +status
+    }
+  }
+}
+
+' ==========================================================
+' DEVICE CONTROL
+' ==========================================================
+
+package "device-control" {
+  package "presentation/page" {
+    class DevicePage <<Vue Page>> {
+      +selectedDevice
+      +selectedDeviceSensor
+      +selectedDeviceValve
+      +handleCreateDevice()
+      +handleLinkSensor()
+      +handleExecuteCommand()
+    }
+  }
+
+  package "presentation/component" {
+    class DeviceCard <<Vue Component>> {
+      +device
+      +active
+      +getDeviceTypeLabel(type)
+      +getStatusLabel(status)
+    }
+
+    class SensorCard <<Vue Component>> {
+      +sensor
+      +getResourceLabel(resourceType)
+    }
+
+    class ValveControl <<Vue Component>> {
+      +valve
+      +getResourceLabel(resourceType)
+      +getStatusLabel(status)
+      +emitOpen(id)
+      +emitClose(id)
+    }
+  }
+
+  package "application/store" {
+    class DeviceControlStore {
+      +state
+      +loadDevicePage()
+      +selectDevice(deviceId)
+      +getSelectedDevice()
+      +createDevice(payload)
+      +linkSensor(payload)
+      +closeValve(valveId)
+      +openValve(valveId)
+      +executeSyncCommand(deviceId)
+    }
+  }
+
+  package "application/service" {
+    class DeviceControlFacade {
+      -deviceControlApiService
+      +getDevice()
+      +createDevice(payload)
+      +linkSensor(payload)
+      +closeValve(valveId)
+      +openValve(valveId)
+      +executeSyncCommand(deviceId)
+      +getCommand()
+      +getSummary()
+    }
+  }
+
+  package "infrastructure/api" {
+    class DeviceControlApiService {
+      +getDevice()
+      +createDevice(payload)
+      +linkSensor(payload)
+      +closeValve(valveId)
+      +openValve(valveId)
+      +executeSyncCommand(deviceId)
+      +getCommand()
+      +getSummary()
+    }
+  }
+
+  package "domain/model" {
+    class Device {
+      +id
+      +siteId
+      +name
+      +type
+      +status
+      +isOnline
+      +sensor
+      +valve
+      +command
+    }
+
+    class Sensor {
+      +id
+      +deviceId
+      +siteId
+      +name
+      +resourceType
+      +currentValue
+      +unit
+      +threshold
+      +status
+      +hasExceededThreshold
+    }
+
+    class Valve {
+      +id
+      +deviceId
+      +siteId
+      +name
+      +resourceType
+      +status
+      +openingPercentage
+      +isOpen
+    }
+
+    class DeviceCommand {
+      +id
+      +deviceId
+      +commandType
+      +status
+      +createdAt
+    }
+  }
+}
+
+' ==========================================================
+' MONITORING
+' ==========================================================
+
+package "monitoring" {
+  package "presentation/page" {
+    class DashboardPage <<Vue Page>> {
+      +createRandomReading()
+      +getSeverityLabel(severity)
+      +getStatusLabel(status)
+    }
+
+    class ReportPage <<Vue Page>> {
+      +handleCreateReport()
+      +getStatusClass(status)
+      +getResourceLabel(resourceType)
+      +getPeriodLabel(period)
+    }
+  }
+
+  package "presentation/component" {
+    class MetricCard <<Vue Component>> {
+      +label
+      +value
+      +hint
+    }
+
+    class UsageChart <<Vue Component>> {
+      +item
+      +getWidth(value)
+      +getResourceLabel(resourceType)
+    }
+  }
+
+  package "application/store" {
+    class MonitoringStore {
+      +state
+      +loadDashboard()
+      +createRandomReading()
+      +createReport(siteId)
+    }
+  }
+
+  package "application/service" {
+    class MonitoringFacade {
+      -monitoringApiService
+      +getSummary()
+      +getActiveSession()
+      +getReading()
+      +getAnomaly()
+      +createRandomReading()
+      +getReport()
+      +createReport(siteId)
+    }
+  }
+
+  package "infrastructure/api" {
+    class MonitoringApiService {
+      +getSummary()
+      +getActiveSession()
+      +getReading()
+      +getAnomaly()
+      +createRandomReading()
+      +getReport()
+      +createReport(siteId)
+    }
+  }
+
+  package "domain/model" {
+    class MonitoringSession {
+      +id
+      +isActive
+      +totalReading
+      +totalAnomaly
+      +startedAt
+    }
+
+    class Reading {
+      +id
+      +sensorId
+      +siteId
+      +resourceType
+      +value
+      +unit
+      +status
+      +measuredAt
+    }
+
+    class Anomaly {
+      +id
+      +readingId
+      +siteId
+      +severity
+      +description
+      +status
+    }
+
+    class Report {
+      +id
+      +siteId
+      +period
+      +totalWater
+      +totalGas
+      +anomalyCount
+    }
+  }
+}
+
+' ==========================================================
+' NOTIFICATION
+' ==========================================================
+
+package "notification" {
+  package "presentation/page" {
+    class AlertPage <<Vue Page>> {
+      +handleCreateAlert()
+      +handleCreateThreshold()
+      +getPriorityClass(priority)
+      +getPriorityLabel(priority)
+    }
+  }
+
+  package "presentation/component" {
+    class AlertCard <<Vue Component>> {
+      +alert
+      +severityClass
+      +getSeverityLabel(severity)
+      +getStatusLabel(status)
+      +emitResolve(id)
+      +emitClose(id)
+      +emitSend(id)
+    }
+
+    class ThresholdCard <<Vue Component>> {
+      +threshold
+      +getResourceLabel(resourceType)
+    }
+  }
+
+  package "application/store" {
+    class NotificationStore {
+      +state
+      +loadAlertPage()
+      +createAlert(payload)
+      +resolveAlert(alertId)
+      +closeAlert(alertId)
+      +createThreshold(payload)
+      +sendAlert(alertId)
+    }
+  }
+
+  package "application/service" {
+    class NotificationFacade {
+      -notificationApiService
+      +getAlert()
+      +createAlert(payload)
+      +resolveAlert(alertId)
+      +closeAlert(alertId)
+      +getThreshold()
+      +createThreshold(payload)
+      +getIncident()
+      +getNotificationChannel()
+      +getAlertDelivery()
+      +sendAlert(alertId)
+      +getSummary()
+    }
+  }
+
+  package "infrastructure/api" {
+    class NotificationApiService {
+      +getAlert()
+      +createAlert(payload)
+      +resolveAlert(alertId)
+      +closeAlert(alertId)
+      +getThreshold()
+      +createThreshold(payload)
+      +getIncident()
+      +getNotificationChannel()
+      +getAlertDelivery()
+      +sendAlert(alertId)
+      +getSummary()
+    }
+  }
+
+  package "domain/model" {
+    class Alert {
+      +id
+      +siteId
+      +sensorId
+      +resourceType
+      +title
+      +description
+      +severity
+      +status
+    }
+
+    class Threshold {
+      +id
+      +siteId
+      +sensorId
+      +resourceType
+      +warningLimit
+      +criticalLimit
+      +unit
+      +enabled
+    }
+
+    class Incident {
+      +id
+      +alertId
+      +siteId
+      +title
+      +description
+      +priority
+      +status
+      +assignedTo
+    }
+
+    class NotificationChannel {
+      +id
+      +name
+      +type
+      +destination
+      +enabled
+    }
+
+    class AlertDelivery {
+      +id
+      +alertId
+      +channelId
+      +status
+      +sentAt
+    }
+  }
+}
+
+' ==========================================================
+' SUPPORT
+' ==========================================================
+
+package "support" {
+  package "presentation/page" {
+    class SupportPage <<Vue Page>> {
+      +messageContent
+      +selectedTicket
+      +selectedConversation
+      +handleCreateTicket()
+      +handleSendMessage()
+      +getStatusLabel(status)
+      +getSenderTypeLabel(senderType)
+    }
+  }
+
+  package "presentation/component" {
+    class SupportTicketCard <<Vue Component>> {
+      +ticket
+      +active
+      +priorityClass
+      +getCategoryLabel(category)
+      +getPriorityLabel(priority)
+      +getStatusLabel(status)
+    }
+
+    class KnowledgeArticleCard <<Vue Component>> {
+      +article
+      +getCategoryLabel(category)
+    }
+  }
+
+  package "application/store" {
+    class SupportStore {
+      +state
+      +loadSupportPage()
+      +selectTicket(ticketId)
+      +getSelectedTicket()
+      +getSelectedConversation()
+      +createTicket(payload)
+      +resolveTicket(ticketId)
+      +closeTicket(ticketId)
+      +sendMessage(content)
+    }
+  }
+
+  package "application/service" {
+    class SupportFacade {
+      -supportApiService
+      +getTicket()
+      +createTicket(payload)
+      +resolveTicket(ticketId)
+      +closeTicket(ticketId)
+      +sendMessage(payload)
+      +getAgent()
+      +getArticle()
+      +getConversation()
+      +getSummary()
+    }
+  }
+
+  package "infrastructure/api" {
+    class SupportApiService {
+      +getTicket()
+      +createTicket(payload)
+      +resolveTicket(ticketId)
+      +closeTicket(ticketId)
+      +sendMessage(payload)
+      +getAgent()
+      +getArticle()
+      +getConversation()
+      +getSummary()
+    }
+  }
+
+  package "domain/model" {
+    class SupportTicket {
+      +id
+      +userId
+      +siteId
+      +title
+      +description
+      +category
+      +priority
+      +status
+      +assignedAgentId
+      +message
+    }
+
+    class SupportMessage {
+      +id
+      +ticketId
+      +senderId
+      +senderType
+      +content
+      +status
+    }
+
+    class SupportAgent {
+      +id
+      +fullName
+      +email
+      +specialty
+      +status
+    }
+
+    class SupportConversation {
+      +id
+      +ticketId
+      +status
+      +message
+    }
+
+    class KnowledgeArticle {
+      +id
+      +title
+      +summary
+      +category
+      +content
+      +helpfulCount
+    }
+  }
+}
+
+' ==========================================================
+' GENERAL DEPENDENCIES
+' ==========================================================
+
+AppLayout --> BottomNavigation
+AppLayout --> LanguageSwitcher
+AppLayout --> UiCard
+
+BottomNavigation --> TranslationService
+LanguageSwitcher --> TranslationService
+RouterGuard --> AuthSessionService
+RouterGuard --> SubscriptionAccessService
+SubscriptionAccessService --> ApiClientService
+SubscriptionAccessService --> AuthSessionService
+
+' IAM
+LoginPage --> AppLayout
+LoginPage --> UiCard
+LoginPage --> IamStore
+LoginPage --> TranslationService
+
+RegisterPage --> AppLayout
+RegisterPage --> UiCard
+RegisterPage --> IamStore
+RegisterPage --> TranslationService
+
+RecoverPasswordPage --> AppLayout
+RecoverPasswordPage --> UiCard
+RecoverPasswordPage --> IamStore
+RecoverPasswordPage --> TranslationService
+
+ProfilePage --> AppLayout
+ProfilePage --> UiCard
+ProfilePage --> IamStore
+ProfilePage --> TranslationService
+
+IamStore --> IamFacade
+IamFacade --> IamApiService
+IamApiService --> ApiClientService
+IamApiService --> AuthSessionService
+IamApiService ..> User
+IamApiService ..> AccessProfile
+IamApiService ..> AuthSession
+
+User --> AccessProfile : accessProfileId
+
+' Plan
+PlanPage --> AppLayout
+PlanPage --> UiCard
+PlanPage --> PlanCard
+PlanPage --> PlanStore
+PlanPage --> TranslationService
+
+PlanCard --> TranslationService
+PlanStore --> PlanFacade
+PlanFacade --> PlanApiService
+PlanApiService --> ApiClientService
+PlanApiService --> AuthSessionService
+
+Plan "1" o-- "*" PlanFeature
+Subscription --> Plan : planId
+Payment --> Subscription : subscriptionId
+ServiceRequest --> Subscription : subscriptionId
+
+' Workplace
+SitePage --> AppLayout
+SitePage --> UiCard
+SitePage --> SiteFilter
+SitePage --> WorkplaceStore
+SitePage --> TranslationService
+
+SiteFilter --> TranslationService
+WorkplaceStore --> WorkplaceFacade
+WorkplaceFacade --> WorkplaceApiService
+WorkplaceApiService --> ApiClientService
+
+Workplace "1" o-- "*" Site
+Site "1" o-- "*" SiteMember
+Site "1" o-- "*" SiteDeviceAssignment
+
+' Device Control
+DevicePage --> AppLayout
+DevicePage --> UiCard
+DevicePage --> DeviceCard
+DevicePage --> SensorCard
+DevicePage --> ValveControl
+DevicePage --> DeviceControlStore
+DevicePage --> TranslationService
+
+DeviceCard --> TranslationService
+SensorCard --> TranslationService
+ValveControl --> TranslationService
+
+DeviceControlStore --> DeviceControlFacade
+DeviceControlFacade --> DeviceControlApiService
+DeviceControlApiService --> ApiClientService
+
+Device "1" o-- "*" Sensor
+Device "1" o-- "*" Valve
+Device "1" o-- "*" DeviceCommand
+Device --> Site : siteId
+
+' Monitoring
+DashboardPage --> AppLayout
+DashboardPage --> UiCard
+DashboardPage --> MetricCard
+DashboardPage --> UsageChart
+DashboardPage --> MonitoringStore
+DashboardPage --> TranslationService
+
+ReportPage --> AppLayout
+ReportPage --> UiCard
+ReportPage --> MetricCard
+ReportPage --> MonitoringStore
+ReportPage --> TranslationService
+
+UsageChart --> TranslationService
+MonitoringStore --> MonitoringFacade
+MonitoringFacade --> MonitoringApiService
+MonitoringApiService --> ApiClientService
+
+MonitoringSession "1" o-- "*" Reading
+Reading "1" --> "0..1" Anomaly
+Report --> Site : siteId
+Reading --> Sensor : sensorId
+
+' Notification
+AlertPage --> AppLayout
+AlertPage --> UiCard
+AlertPage --> AlertCard
+AlertPage --> ThresholdCard
+AlertPage --> NotificationStore
+AlertPage --> TranslationService
+
+AlertCard --> TranslationService
+ThresholdCard --> TranslationService
+
+NotificationStore --> NotificationFacade
+NotificationFacade --> NotificationApiService
+NotificationApiService --> ApiClientService
+
+Alert "1" --> "0..*" Incident
+Alert "1" --> "0..*" AlertDelivery
+Threshold --> Sensor : sensorId
+AlertDelivery --> NotificationChannel : channelId
+
+' Support
+SupportPage --> AppLayout
+SupportPage --> UiCard
+SupportPage --> SupportTicketCard
+SupportPage --> KnowledgeArticleCard
+SupportPage --> SupportStore
+SupportPage --> TranslationService
+
+SupportTicketCard --> TranslationService
+KnowledgeArticleCard --> TranslationService
+
+SupportStore --> SupportFacade
+SupportFacade --> SupportApiService
+SupportApiService --> ApiClientService
+SupportApiService --> AuthSessionService
+
+SupportTicket "1" o-- "*" SupportMessage
+SupportConversation --> SupportTicket : ticketId
+SupportTicket --> SupportAgent : assignedAgentId
+SupportTicket --> Site : siteId
+
+' Cross-context relations
+User --> Subscription : userId
+User --> SiteMember : userId
+User --> SupportTicket : userId
+
+Site --> Device : siteId
+Site --> Reading : siteId
+Site --> Alert : siteId
+Site --> Incident : siteId
+Site --> SupportTicket : siteId
+
+Sensor --> Reading : sensorId
+Sensor --> Alert : sensorId
+Sensor --> Threshold : sensorId
+
+note bottom
+Los endpoints REST se mantienen en plural porque representan colecciones.
+Las clases, páginas, stores, facades, services, modelos y componentes se expresan en singular.
+end note
 
 @enduml

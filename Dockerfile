@@ -1,16 +1,22 @@
-﻿FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
-WORKDIR /src
+FROM node:20-alpine AS build
 
-COPY . .
-RUN dotnet restore LowCortisol.sln
-RUN dotnet publish LowCortisol.Presentation/LowCortisol.Presentation.csproj -c Release -o /app/publish
-
-FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
 WORKDIR /app
 
-COPY --from=build /app/publish .
+COPY package*.json ./
 
-ENV ASPNETCORE_URLS=http://+:10000
-EXPOSE 10000
+RUN npm install
 
-ENTRYPOINT ["dotnet", "LowCortisol.Presentation.dll"]
+COPY . .
+
+RUN npm run build
+
+
+FROM nginx:alpine
+
+COPY --from=build /app/dist /usr/share/nginx/html
+
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]
