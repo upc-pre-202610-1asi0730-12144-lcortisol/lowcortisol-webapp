@@ -1,0 +1,429 @@
+{
+  "app": {
+    "name": "LowCortisol"
+  },
+  "pageTitle": {
+    "login": "Sign in",
+    "register": "Create account",
+    "recoverPassword": "Recover password",
+    "profile": "Profile",
+    "plan": "Plans",
+    "dashboard": "Monitoring dashboard",
+    "site": "Sites",
+    "device": "Devices",
+    "alert": "Alerts",
+    "report": "Reports",
+    "support": "Support"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "sites": "Sites",
+    "devices": "Devices",
+    "alerts": "Alerts",
+    "reports": "Reports",
+    "plans": "Plans",
+    "support": "Support",
+    "profile": "Profile"
+  },
+  "actions": {
+    "saveChanges": "Save changes",
+    "cancel": "Cancel",
+    "closeSession": "Sign out",
+    "create": "Create",
+    "update": "Update",
+    "send": "Send",
+    "enter": "Enter",
+    "register": "Register",
+    "recover": "Send recovery",
+    "backToLogin": "Back to sign in",
+    "createAccount": "Create account",
+    "alreadyHaveAccount": "I already have an account",
+    "updateProfile": "Update profile"
+  },
+  "auth": {
+    "login": {
+      "title": "Sign in",
+      "subtitle": "Access your account to continue monitoring.",
+      "forgotPassword": "Forgot password",
+      "createAccountText": "Don't have an account?",
+      "emailPlaceholder": "Enter your email",
+      "passwordPlaceholder": "Enter your password"
+    },
+    "register": {
+      "title": "Create account",
+      "subtitle": "Enter your information to access the platform.",
+      "fullNamePlaceholder": "Enter your full name",
+      "emailPlaceholder": "Enter your email",
+      "phonePlaceholder": "Enter your phone number",
+      "passwordPlaceholder": "Create a password"
+    },
+    "recoverPassword": {
+      "title": "Recover password",
+      "subtitle": "Enter your email to receive recovery instructions.",
+      "emailPlaceholder": "Enter your email"
+    },
+    "fields": {
+      "fullName": "Full name",
+      "email": "Email",
+      "phone": "Phone",
+      "password": "Password"
+    },
+    "messages": {
+      "profileUpdated": "Profile updated successfully."
+    }
+  },
+  "profile": {
+    "title": "Profile",
+    "subtitle": "Manage your personal information, active session and access profile.",
+    "user": "User",
+    "accessProfile": "Access profile",
+    "updateData": "Update data",
+    "activeSession": "Active session",
+    "technicalTraceability": "Technical traceability",
+    "name": "Name",
+    "role": "Role",
+    "permissions": "Permissions",
+    "status": "Status",
+    "token": "Token",
+    "active": "Active",
+    "available": "Available"
+  },
+  "monitoring": {
+    "dashboard": {
+      "title": "Monitoring dashboard",
+      "subtitle": "General status of consumption, sensors, active sessions and detected anomalies.",
+      "simulateReading": "Simulate reading",
+      "waterMonitored": "Water monitored",
+      "gasMonitored": "Gas monitored",
+      "criticalAnomalies": "Critical anomalies",
+      "recentReadings": "Recent readings",
+      "activeSession": "Active session",
+      "anomalies": "Anomalies",
+      "noAnomalies": "No anomalies registered.",
+      "status": "Status",
+      "active": "Active",
+      "finished": "Finished",
+      "totalReadings": "Total readings",
+      "detectedAnomalies": "Detected anomalies"
+    },
+    "reports": {
+      "title": "Reports",
+      "subtitle": "Consumption history and reports generated from monitored readings.",
+      "generateReport": "Generate report",
+      "generatedReports": "Generated reports",
+      "availableReadings": "Available readings",
+      "anomalies": "Anomalies",
+      "consumptionReports": "Consumption reports",
+      "baseReadings": "Base readings",
+      "noReports": "No reports generated yet.",
+      "site": "Site"
+    },
+    "resources": {
+      "water": "Water",
+      "gas": "Gas"
+    },
+    "status": {
+      "normal": "Normal",
+      "warning": "Warning",
+      "critical": "Critical",
+      "open": "Open",
+      "resolved": "Resolved",
+      "closed": "Closed"
+    },
+    "periods": {
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "monthly": "Monthly",
+      "custom": "Custom"
+    }
+  },
+  "workplace": {
+    "sites": {
+      "title": "Sites",
+      "subtitle": "Manage your sites, assigned members, linked devices and consolidated metrics.",
+      "registerSite": "Register site",
+      "all": "All",
+      "residential": "Residential",
+      "business": "Business",
+      "industrial": "Industrial",
+      "registeredSites": "Registered sites",
+      "activeSites": "Active sites",
+      "assignedDevices": "Assigned devices",
+      "sitesList": "Sites list",
+      "siteDetail": "Site detail",
+      "assignedMembers": "Assigned members",
+      "assignedDevicesTitle": "Assigned devices",
+      "summary": "Consolidated summary",
+      "domainModel": "Domain model",
+      "loading": "Loading sites...",
+      "emptySites": "There are no sites registered with the selected filter.",
+      "selectSite": "Select a site to view its details.",
+      "noMembers": "There are no members assigned to this site.",
+      "noDevices": "There are no devices assigned to this site.",
+      "assignMember": "Assign member",
+      "assignDevice": "Assign device",
+      "waterConsumption": "Water consumption",
+      "gasConsumption": "Gas consumption",
+      "activeSensors": "Active sensors",
+      "activeIncidents": "Active incidents",
+      "totalWater": "Total monitored water",
+      "totalGas": "Total monitored gas",
+      "registeredMembers": "Registered members",
+      "maintenanceSites": "Sites under maintenance",
+      "newSite": "New site",
+      "pendingAddress": "Pending address"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "maintenance": "Maintenance",
+      "unknown": "Unknown status"
+    },
+    "roles": {
+      "owner": "Owner",
+      "admin": "Administrator",
+      "operator": "Operator",
+      "viewer": "Viewer",
+      "unknown": "Unknown role"
+    },
+    "deviceTypes": {
+      "sensor": "Sensor",
+      "valve": "Valve",
+      "hub": "Hub",
+      "device": "Device"
+    }
+  },
+  "deviceControl": {
+    "devices": {
+      "title": "Devices",
+      "subtitle": "Control hubs, sensors, valves and remote commands linked to your sites.",
+      "addDevice": "Add device",
+      "registeredDevices": "Registered devices",
+      "activeSensors": "Active sensors",
+      "closedValves": "Closed valves",
+      "devicesList": "Devices list",
+      "deviceDetail": "Device detail",
+      "linkedSensors": "Linked sensors",
+      "valveControl": "Valve control",
+      "recentCommands": "Recent commands",
+      "loading": "Loading devices...",
+      "selectDevice": "Select a device to view its details.",
+      "noSensors": "There are no sensors linked to this device.",
+      "noValves": "There are no valves available for this device.",
+      "noCommands": "There are no executed commands yet.",
+      "linkedSensorsCount": "Linked sensors",
+      "availableValves": "Available valves",
+      "executedCommands": "Executed commands",
+      "syncDevice": "Sync device",
+      "linkSensor": "Link sensor",
+      "additionalHub": "Additional hub",
+      "linkedSensor": "Linked sensor",
+      "mainHub": "Main Hub",
+      "site": "Site"
+    },
+    "types": {
+      "hub": "Hub",
+      "sensor": "Sensor",
+      "valve": "Valve",
+      "device": "Device"
+    },
+    "resources": {
+      "water": "Water",
+      "gas": "Gas"
+    },
+    "status": {
+      "online": "Online",
+      "offline": "Offline",
+      "maintenance": "Maintenance",
+      "open": "Open",
+      "closed": "Closed",
+      "active": "Active",
+      "inactive": "Inactive",
+      "unknown": "Unknown status"
+    },
+    "commands": {
+      "sync": "Sync",
+      "closeValve": "Close valve",
+      "openValve": "Open valve",
+      "reboot": "Reboot",
+      "command": "Command",
+      "pending": "Pending",
+      "executed": "Executed",
+      "failed": "Failed"
+    },
+    "actions": {
+      "open": "Open",
+      "close": "Close"
+    },
+    "sensor": {
+      "thresholdExceeded": "Threshold exceeded",
+      "normal": "Normal"
+    }
+  },
+  "notifications": {
+    "alerts": {
+      "title": "Alerts",
+      "subtitle": "Manage alerts, thresholds, incidents and notification channels.",
+      "createAlert": "Create alert",
+      "registeredAlerts": "Registered alerts",
+      "criticalAlerts": "Critical alerts",
+      "openIncidents": "Open incidents",
+      "activeAlerts": "Active alerts",
+      "configuredThresholds": "Configured thresholds",
+      "incidents": "Incidents",
+      "channelsAndDeliveries": "Channels and deliveries",
+      "loading": "Loading alerts...",
+      "noAlerts": "There are no registered alerts.",
+      "noThresholds": "There are no configured thresholds.",
+      "noIncidents": "There are no generated incidents.",
+      "createThreshold": "Create threshold",
+      "enabledChannels": "Enabled channels",
+      "sentAlerts": "Sent alerts",
+      "activeThresholds": "Active thresholds",
+      "automaticAlert": "Automatic alert",
+      "automaticDescription": "A reading outside the expected range was detected.",
+      "incidentPrefix": "Incident"
+    },
+    "actions": {
+      "resolve": "Resolve",
+      "close": "Close",
+      "send": "Send"
+    },
+    "severity": {
+      "info": "Informational",
+      "warning": "Warning",
+      "critical": "Critical",
+      "unknown": "Unknown severity"
+    },
+    "status": {
+      "open": "Open",
+      "assigned": "Assigned",
+      "resolved": "Resolved",
+      "closed": "Closed",
+      "unknown": "Unknown status"
+    },
+    "priority": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "critical": "Critical",
+      "unknown": "Unknown priority"
+    },
+    "resource": {
+      "water": "Water",
+      "gas": "Gas"
+    }
+  },
+  "plans": {
+    "page": {
+      "title": "Plans",
+      "subtitle": "Manage your subscription, benefits, payments and service requests.",
+      "cancelSubscription": "Cancel subscription",
+      "activePlan": "Active plan",
+      "capacity": "Capacity",
+      "payments": "Payments",
+      "allowedSites": "Allowed sites",
+      "totalPaid": "Total paid",
+      "paymentHistory": "Payment history",
+      "serviceRequests": "Service requests",
+      "noPayments": "There are no registered payments.",
+      "noRequests": "There are no registered requests.",
+      "choosePlan": "Choose plan",
+      "currentPlan": "Current plan",
+      "recommended": "Recommended",
+      "monthly": "monthly",
+      "yearly": "yearly",
+      "period": "period",
+      "sites": "site(s)",
+      "devices": "device(s)",
+      "buyPlan": "Buy plan",
+      "checkoutTitle": "Buy subscription",
+      "checkoutSubtitle": "Complete your payment details to activate your plan.",
+      "selectedPlan": "Selected plan",
+      "cardholderName": "Cardholder name",
+      "cardNumber": "Card number",
+      "expirationDate": "Expiration date",
+      "securityCode": "CVV",
+      "confirmPurchase": "Confirm purchase",
+      "closeForm": "Close form",
+      "noActiveSubscription": "You do not have an active subscription yet. Buy a plan to unlock platform access.",
+      "serviceRequest": "Service requests",
+      "noRequest": "No service requests registered."
+    },
+    "status": {
+      "active": "Active",
+      "cancelled": "Cancelled",
+      "suspended": "Suspended",
+      "expired": "Expired",
+      "unknown": "Unknown status",
+      "paid": "Paid",
+      "pending": "Pending",
+      "failed": "Failed",
+      "refunded": "Refunded"
+    },
+    "requests": {
+      "changePlan": "Plan change",
+      "cancellation": "Cancellation",
+      "support": "Support",
+      "request": "Request"
+    }
+  },
+  "support": {
+    "page": {
+      "title": "Support",
+      "subtitle": "Manage tickets, messages and help articles to resolve incidents.",
+      "createTicket": "Create ticket",
+      "tickets": "Tickets",
+      "agents": "Agents",
+      "help": "Help",
+      "registeredTickets": "Registered tickets",
+      "availableAgents": "Available agents",
+      "publishedArticles": "Published articles",
+      "supportTickets": "Support tickets",
+      "ticketDetail": "Ticket detail",
+      "helpArticles": "Help articles",
+      "loadingTickets": "Loading tickets...",
+      "selectTicket": "Select a ticket to view its conversation.",
+      "writeMessage": "Write a message...",
+      "send": "Send",
+      "resolve": "Resolve",
+      "close": "Close",
+      "supportRequest": "Support request",
+      "supportRequestDescription": "I need help with a system configuration."
+    },
+    "category": {
+      "technical": "Technical",
+      "billing": "Billing",
+      "device": "Device",
+      "incident": "Incident",
+      "alerts": "Alerts",
+      "support": "Support"
+    },
+    "priority": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "critical": "Critical",
+      "unknown": "Unknown priority"
+    },
+    "status": {
+      "open": "Open",
+      "assigned": "Assigned",
+      "resolved": "Resolved",
+      "closed": "Closed",
+      "available": "Available",
+      "busy": "Busy",
+      "offline": "Offline",
+      "unknown": "Unknown status"
+    },
+    "sender": {
+      "user": "User",
+      "agent": "Agent",
+      "system": "System",
+      "unknown": "Sender"
+    },
+    "article": {
+      "helpful": "helpful"
+    }
+  }
+}
