@@ -69,8 +69,8 @@
 </template>
 
 <script setup>
-import { reactive } from "vue";
-import { useRouter } from "vue-router";
+import { onMounted, reactive } from "vue";
+import { useRoute, useRouter } from "vue-router";
 
 import AppLayout from "../../../../shared/presentation/components/app-layout/app-layout.component.vue";
 import UiCard from "../../../../shared/presentation/components/ui-card/ui-card.component.vue";
@@ -78,7 +78,9 @@ import UiCard from "../../../../shared/presentation/components/ui-card/ui-card.c
 import { useIamStore } from "../../../application/store/iam.store";
 import { useTranslation } from "../../../../shared/application/services/translation.service";
 
+const route = useRoute();
 const router = useRouter();
+
 const { state, signUp } = useIamStore();
 const { t } = useTranslation();
 
@@ -89,8 +91,36 @@ const form = reactive({
   password: "",
 });
 
+onMounted(() => {
+  const planId = route.query.plan;
+  const planCode = route.query.code;
+
+  if (planId) {
+    localStorage.setItem("lowcortisol.pendingPlanId", String(planId));
+  }
+
+  if (planCode) {
+    localStorage.setItem("lowcortisol.pendingPlanCode", String(planCode));
+  }
+});
+
 async function handleSubmit() {
   await signUp(form);
+
+  const pendingPlanId = localStorage.getItem("lowcortisol.pendingPlanId");
+  const pendingPlanCode = localStorage.getItem("lowcortisol.pendingPlanCode");
+
+  if (pendingPlanId) {
+    await router.push({
+      name: "plans",
+      query: {
+        plan: pendingPlanId,
+        code: pendingPlanCode || "",
+      },
+    });
+    return;
+  }
+
   await router.push({ name: "dashboard" });
 }
 </script>

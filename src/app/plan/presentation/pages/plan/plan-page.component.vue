@@ -208,16 +208,17 @@
 
 <script setup>
 import { onMounted, reactive, ref } from "vue";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 
 import AppLayout from "../../../../shared/presentation/components/app-layout/app-layout.component.vue";
 import UiCard from "../../../../shared/presentation/components/ui-card/ui-card.component.vue";
 
-import PlanCard from "../../components/plan-card/plan-card.component.vue";
+import PlanCard from "./components/plan-card/plan-card.component.vue";
 
 import { usePlanStore } from "../../../application/store/plan.store";
 import { useTranslation } from "../../../../shared/application/services/translation.service";
 
+const route = useRoute();
 const router = useRouter();
 
 const {
@@ -241,7 +242,61 @@ const checkout = reactive({
 
 onMounted(async () => {
   await loadPlanPage();
+  await applyLandingSelectedPlan();
 });
+
+async function applyLandingSelectedPlan() {
+  const planIdFromQuery = route.query.plan ? String(route.query.plan) : "";
+  const planCodeFromQuery = route.query.code ? String(route.query.code) : "";
+
+  const pendingPlanId =
+      planIdFromQuery || localStorage.getItem("lowcortisol.pendingPlanId");
+
+  const pendingPlanCode =
+      planCodeFromQuery || localStorage.getItem("lowcortisol.pendingPlanCode");
+
+  if (!pendingPlanId) {
+    return;
+  }
+
+  const selected = state.plans.find((plan) => plan.id === pendingPlanId);
+
+  if (!selected) {
+    localStorage.removeItem("lowcortisol.pendingPlanId");
+    localStorage.removeItem("lowcortisol.pendingPlanCode");
+    return;
+  }
+
+  try {
+    if (state.subscription?.planId === pendingPlanId) {
+      clearPendingPlan();
+      return;
+    }
+
+    if (state.subscription?.id) {
+      await changePlan(pendingPlanId);
+    } else {
+      await subscribeToPlan(pendingPlanId);
+    }
+
+    clearPendingPlan();
+
+    await router.replace({
+      name: "plans",
+    });
+  } catch (error) {
+    console.error("Could not apply landing selected plan:", {
+      planId: pendingPlanId,
+      code: pendingPlanCode,
+      error,
+    });
+  }
+}
+
+function clearPendingPlan() {
+  localStorage.removeItem("lowcortisol.pendingPlanId");
+  localStorage.removeItem("lowcortisol.pendingPlanCode");
+}
 
 function openCheckout(plan) {
   selectedPlan.value = plan;
@@ -335,60 +390,48 @@ function handleSecurityCodeInput(event) {
   event.target.value = checkout.securityCode;
 }
 
-async function handlePurchase() {
-  if (!selectedPlan.value) return;
+async function handleCheckoutSubmit() {
+  if (!selectedPlan.value) {
+    return;
+  }
 
-  if (!state.subscription) {
-    await subscribeToPlan(selectedPlan.value.id);
-  } else if (state.subscription.planId !== selectedPlan.value.id) {
+  if (state.subscription?.id) {
     await changePlan(selectedPlan.value.id);
+  } else {
+    await subscribeToPlan(selectedPlan.value.id);
   }
 
   closeCheckout();
-
-  await router.push({ name: "dashboard" });
-}
-
-function getSubscriptionStatusLabel(status) {
-  const keys = {
-    active: "plans.status.active",
-    cancelled: "plans.status.cancelled",
-    suspended: "plans.status.suspended",
-    expired: "plans.status.expired",
-  };
-
-  return t(keys[status] ?? "plans.status.unknown");
 }
 
 function getPaymentStatusLabel(status) {
-  const keys = {
-    paid: "plans.status.paid",
-    pending: "plans.status.pending",
-    failed: "plans.status.failed",
-    refunded: "plans.status.refunded",
+  const labels = {
+    paid: t("plans.status.paid"),
+    pending: t("plans.status.pending"),
+    failed: t("plans.status.failed"),
+    refunded: t("plans.status.refunded"),
   };
 
-  return t(keys[status] ?? "plans.status.unknown");
-}
-
-function getRequestStatusLabel(status) {
-  const keys = {
-    open: "notifications.status.open",
-    resolved: "notifications.status.resolved",
-    closed: "notifications.status.closed",
-  };
-
-  return t(keys[status] ?? "plans.status.unknown");
+  return labels[status] || status;
 }
 
 function getRequestTypeLabel(type) {
-  const keys = {
-    "change-plan": "plans.request.changePlan",
-    cancellation: "plans.request.cancellation",
-    support: "plans.request.support",
+  const labels = {
+    "change-plan": t("plans.request.changePlan"),
+    cancellation: t("plans.request.cancellation"),
   };
 
-  return t(keys[type] ?? "plans.request.request");
+  return labels[type] || type;
+}
+
+function getRequestStatusLabel(status) {
+  const labels = {
+    open: t("plans.status.open"),
+    resolved: t("plans.status.resolved"),
+    closed: t("plans.status.closed"),
+  };
+
+  return labels[status] || status;
 }
 </script>
 

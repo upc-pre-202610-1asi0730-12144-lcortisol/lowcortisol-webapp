@@ -1,0 +1,69 @@
+@startuml
+title LowCortisol Platform - Workplace Context - Backend Component Diagram
+
+!define C4Puml https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master
+!includeurl C4Puml/C4_Component.puml
+
+LAYOUT_WITH_LEGEND()
+
+Container(spa, "Single Page Application", "Vue / Vite", "Consumes workplace backend endpoints for managing workplaces, sites, site members, and device assignments.")
+
+ContainerDb(database, "LowCortisol Database", "SQL Server / PostgreSQL", "Stores workplaces, sites, site members, device assignments, users, subscriptions, and devices.")
+
+Container_Boundary(workplaceContext, "Workplace Bounded Context") {
+
+  Component(interfaceLayer, "Interface Layer", "ASP.NET Core Controllers", "Exposes workplace, site, site member, and site device assignment endpoints through WorkplaceController, SiteController, SiteMemberController, and SiteDeviceAssignmentController.")
+@startuml
+title LowCortisol Platform - Workspace Backend Component Diagram
+
+!define C4Puml https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master
+!includeurl C4Puml/C4_Component.puml
+
+LAYOUT_WITH_LEGEND()
+
+Container(spa, "Single Page Application", "Vue / Vite", "Consumes workspace backend endpoints.")
+ContainerDb(database, "Database", "SQL Server / PostgreSQL", "Stores workspaces, sites, members, and device assignments.")
+
+Container_Boundary(workspace, "Workspace") {
+
+  Component(interface, "Interface", "ASP.NET Core Controllers", "Exposes workspace, site, member, and assignment endpoints through WorkspaceController, SiteController, SiteMemberController, and SiteDeviceAssignmentController.")
+
+  Component(application, "Application", "Application Services / Commands / DTOs", "Coordinates workspace retrieval, site creation, site filtering, member assignment, device assignment, and summary generation.")
+
+  Component(domain, "Domain", "Domain Model / Business Rules", "Contains Workspace, Site, SiteMember, SiteDeviceAssignment, and workspace business rules.")
+
+  Component(infrastructure, "Infrastructure", "Repositories / Persistence Services", "Implements repositories and database access for workspaces, sites, members, and assignments.")
+}
+
+Rel(spa, interface, "Consumes workspace endpoints", "HTTPS/JSON")
+
+Rel(interface, application, "Delegates commands and queries")
+Rel(application, domain, "Applies workspace business rules")
+Rel(application, infrastructure, "Uses repositories and persistence services")
+
+Rel(infrastructure, database, "Reads and writes workspace data", "EF Core")
+
+@enduml
+  Component(applicationLayer, "Application Layer", "Application Services / Commands / DTOs", "Coordinates workplace use cases such as getting the current workplace, creating sites, filtering sites, assigning members, assigning devices, and generating workplace summaries.")
+
+  Component(domainLayer, "Domain Layer", "Domain Model / Business Rules", "Contains Workplace, Site, SiteMember, SiteDeviceAssignment, and workplace management business rules.")
+
+  Component(infrastructureLayer, "Infrastructure Layer", "Repositories / Persistence Services", "Implements repositories and database access for workplaces, sites, site members, and site device assignments.")
+
+  Component(subscriptionAccessPolicy, "Subscription Access Policy", "Domain Service", "Validates whether the current subscription allows creating more sites or assigning more devices.")
+
+  Component(workplaceSummaryService, "Workplace Summary Service", "Domain/Application Service", "Calculates workplace metrics such as total sites, active sites, maintenance sites, members, assignments, and resource consumption.")
+}
+
+Rel(spa, interfaceLayer, "Consumes workplace endpoints", "HTTPS/JSON")
+
+Rel(interfaceLayer, applicationLayer, "Delegates commands and queries")
+Rel(applicationLayer, domainLayer, "Applies workplace business rules")
+Rel(applicationLayer, infrastructureLayer, "Uses repositories and persistence services")
+
+Rel(applicationLayer, subscriptionAccessPolicy, "Validates plan limits")
+Rel(applicationLayer, workplaceSummaryService, "Calculates workplace summary")
+
+Rel(infrastructureLayer, database, "Reads and writes workplace context data", "EF Core")
+
+@enduml
