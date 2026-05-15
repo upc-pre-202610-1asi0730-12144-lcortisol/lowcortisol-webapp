@@ -213,8 +213,6 @@ import { useRoute, useRouter } from "vue-router";
 import AppLayout from "../../../../shared/presentation/components/app-layout/app-layout.component.vue";
 import UiCard from "../../../../shared/presentation/components/ui-card/ui-card.component.vue";
 
-import PlanCard from "./components/plan-card/plan-card.component.vue";
-
 import { usePlanStore } from "../../../application/store/plan.store";
 import { useTranslation } from "../../../../shared/application/services/translation.service";
 
