@@ -351,11 +351,23 @@ function getRequestStatusLabel(status) {
 </script>
 
 <style scoped>
+.plans-page,
+.plans-page * {
+  font-family: var(--font-main);
+}
+
 .plans-page {
-  width: min(100%, 1180px);
+  width: min(var(--page-max-width), calc(100% - 32px));
   margin: 0 auto;
   display: grid;
   gap: 28px;
+}
+
+.plans-page button,
+.plans-page input,
+.plans-page select,
+.plans-page textarea {
+  font: inherit;
 }
 
 .page-header {
@@ -367,11 +379,16 @@ function getRequestStatusLabel(status) {
 
 .page-header h1 {
   font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  line-height: 1;
   margin: 0 0 8px;
 }
 
 .page-header p {
   color: var(--color-text-muted);
+  font-size: 15px;
+  font-weight: 500;
   margin: 0;
 }
 
@@ -381,6 +398,7 @@ function getRequestStatusLabel(status) {
   color: var(--color-primary);
   border-radius: 24px;
   padding: 20px 24px;
+  font-size: 16px;
   font-weight: 900;
 }
 
@@ -397,12 +415,18 @@ function getRequestStatusLabel(status) {
 
 .summary-value {
   display: block;
-  font-size: 2rem;
+  color: var(--color-text);
+  font-size: 32px;
+  font-weight: 900;
+  letter-spacing: -0.05em;
+  line-height: 1;
   margin-top: 8px;
 }
 
 .summary-label {
   color: var(--color-text-muted);
+  font-size: 14px;
+  font-weight: 500;
   margin: 8px 0 0;
 }
 
@@ -436,14 +460,17 @@ function getRequestStatusLabel(status) {
 }
 
 .plan-badge {
+  display: inline-flex;
   width: fit-content;
   background: #dbeafe;
   color: var(--color-primary);
   border: 1px solid #93c5fd;
   border-radius: 999px;
   padding: 8px 16px;
-  font-size: 0.85rem;
+  font-size: 12px;
   font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.02em;
   margin-bottom: 14px;
 }
 
@@ -455,38 +482,49 @@ function getRequestStatusLabel(status) {
 }
 
 .plan-header h2 {
+  color: var(--color-text);
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  line-height: 1;
   margin: 0 0 12px;
-  font-size: 1.7rem;
 }
 
 .plan-header p {
   max-width: 170px;
   color: var(--color-text-muted);
-  line-height: 1.5;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.45;
   margin: 0;
 }
 
 .plan-price {
   min-width: 115px;
-  text-align: right;
-  font-size: 1.9rem;
-  font-weight: 900;
   color: var(--color-text);
+  text-align: right;
+  font-size: 32px;
+  font-weight: 900;
+  letter-spacing: -0.06em;
+  line-height: 0.9;
   white-space: nowrap;
-  line-height: 1.05;
 }
 
 .plan-price span {
   display: block;
-  font-size: 0.9rem;
+  margin-top: 4px;
   color: var(--color-text-muted);
+  font-size: 14px;
   font-weight: 900;
-  white-space: normal;
+  letter-spacing: -0.02em;
+  line-height: 1;
 }
 
 .plan-capacity {
   color: var(--color-text-muted);
+  font-size: 14px;
   font-weight: 900;
+  letter-spacing: -0.01em;
   margin: 32px 0 28px;
 }
 
@@ -499,7 +537,10 @@ function getRequestStatusLabel(status) {
 }
 
 .plan-features li {
+  color: var(--color-text);
+  font-size: 14px;
   font-weight: 900;
+  letter-spacing: -0.01em;
 }
 
 .plan-features li::before {
@@ -509,10 +550,13 @@ function getRequestStatusLabel(status) {
 }
 
 .plan-action {
-  margin-top: auto;
   width: 100%;
+  margin-top: auto;
   border-radius: 14px;
   padding: 16px 18px;
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: -0.01em;
 }
 
 .details-grid {
@@ -541,6 +585,8 @@ function getRequestStatusLabel(status) {
 
 .detail-row p {
   color: var(--color-text-muted);
+  font-size: 14px;
+  font-weight: 500;
   margin: 6px 0 0;
 }
 
@@ -549,6 +595,7 @@ function getRequestStatusLabel(status) {
   border: 1px solid #bfdbfe;
   background: #eaf4ff;
   color: var(--color-text-muted);
+  font-size: 14px;
   font-weight: 900;
   padding: 10px 16px;
   white-space: nowrap;
@@ -558,6 +605,8 @@ function getRequestStatusLabel(status) {
   border: 1px dashed var(--color-border);
   border-radius: 16px;
   color: var(--color-text-muted);
+  font-size: 14px;
+  font-weight: 500;
   padding: 18px;
 }
 
@@ -593,5 +642,15 @@ function getRequestStatusLabel(status) {
   .plan-price {
     text-align: left;
   }
+}
+
+.plans-page .plan-action {
+  font-family: var(--font-main);
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  border-radius: 14px;
+  padding: 16px 18px;
 }
 </style>

@@ -148,6 +148,3327 @@ npm run build
 
 
 ============================================================
+FILE: ./docs/backend-class-diagram.puml
+============================================================
+@startuml
+title LowCortisol Platform - Backend Class Diagram C# ASP.NET Core
+
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam linetype ortho
+
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #1F2937
+  ArrowColor #1F2937
+}
+
+skinparam package {
+  BackgroundColor #F8FAFC
+  BorderColor #CBD5E1
+}
+
+skinparam note {
+  BackgroundColor #EFF6FF
+  BorderColor #60A5FA
+}
+
+' ==========================================================
+' SHARED
+' ==========================================================
+
+package "shared" {
+  package "domain" {
+    abstract class BaseEntity {
+      +Guid Id
+      +DateTime CreatedAt
+      +DateTime? UpdatedAt
+      +void SetCreatedAt()
+      +void SetUpdatedAt()
+    }
+
+    interface Repository<T> {
+      +Task<IEnumerable<T>> GetAllAsync()
+      +Task<T?> GetByIdAsync(Guid id)
+      +Task AddAsync(T entity)
+      +void Update(T entity)
+      +void Delete(T entity)
+    }
+
+    interface UnitOfWork {
+      +Task<int> CompleteAsync()
+    }
+  }
+
+  package "application" {
+    class ApiResponse<T> {
+      +bool Success
+      +string Message
+      +T Data
+      +IEnumerable<string> Error
+    }
+
+    class PageResult<T> {
+      +IEnumerable<T> Item
+      +int Page
+      +int PageSize
+      +int Total
+    }
+  }
+
+  package "infrastructure" {
+    class DateTimeProvider {
+      +DateTime UtcNow()
+    }
+
+    class LowCortisolDbContext {
+      +DbSet<User> User
+      +DbSet<AccessProfile> AccessProfile
+      +DbSet<Permission> Permission
+      +DbSet<AuthSession> AuthSession
+      +DbSet<Plan> Plan
+      +DbSet<PlanFeature> PlanFeature
+      +DbSet<Subscription> Subscription
+      +DbSet<Payment> Payment
+      +DbSet<ServiceRequest> ServiceRequest
+      +DbSet<Workplace> Workplace
+      +DbSet<Site> Site
+      +DbSet<SiteMember> SiteMember
+      +DbSet<SiteDeviceAssignment> SiteDeviceAssignment
+      +DbSet<Device> Device
+      +DbSet<Sensor> Sensor
+      +DbSet<Valve> Valve
+      +DbSet<DeviceCommand> DeviceCommand
+      +DbSet<MonitoringSession> MonitoringSession
+      +DbSet<Reading> Reading
+      +DbSet<Anomaly> Anomaly
+      +DbSet<Report> Report
+      +DbSet<Alert> Alert
+      +DbSet<Threshold> Threshold
+      +DbSet<Incident> Incident
+      +DbSet<NotificationChannel> NotificationChannel
+      +DbSet<AlertDelivery> AlertDelivery
+      +DbSet<SupportTicket> SupportTicket
+      +DbSet<SupportMessage> SupportMessage
+      +DbSet<SupportAgent> SupportAgent
+      +DbSet<SupportConversation> SupportConversation
+      +DbSet<KnowledgeArticle> KnowledgeArticle
+      +Task<int> SaveChangesAsync()
+    }
+
+    class EfUnitOfWork {
+      -LowCortisolDbContext context
+      +Task<int> CompleteAsync()
+    }
+  }
+}
+
+' ==========================================================
+' IAM
+' ==========================================================
+
+package "iam" {
+  package "domain" {
+    class User {
+      +Guid Id
+      +string FullName
+      +string Email
+      +string Phone
+      +string PasswordHash
+      +string Status
+      +Guid AccessProfileId
+      +void Activate()
+      +void Deactivate()
+      +void UpdateProfile(string fullName, string phone)
+    }
+
+    class AccessProfile {
+      +Guid Id
+      +string Name
+      +string Role
+      +ICollection<Permission> Permission
+      +bool HasPermission(string code)
+    }
+
+    class Permission {
+      +Guid Id
+      +string Code
+      +string Description
+    }
+
+    class AuthSession {
+      +Guid Id
+      +Guid UserId
+      +string Token
+      +string RefreshToken
+      +bool IsActive
+      +DateTime ExpiresAt
+      +void Revoke()
+      +bool IsExpired()
+    }
+
+    interface UserRepository {
+      +Task<User?> FindByEmailAsync(string email)
+      +Task<User?> FindByIdAsync(Guid id)
+      +Task AddAsync(User user)
+      +void Update(User user)
+    }
+
+    interface AccessProfileRepository {
+      +Task<AccessProfile?> FindByIdAsync(Guid id)
+      +Task<AccessProfile?> FindDefaultOwnerProfileAsync()
+    }
+
+    interface AuthSessionRepository {
+      +Task AddAsync(AuthSession session)
+      +Task<AuthSession?> FindActiveByTokenAsync(string token)
+      +void Update(AuthSession session)
+    }
+  }
+
+  package "application" {
+    class SignInCommand {
+      +string Email
+      +string Password
+    }
+
+    class SignUpCommand {
+      +string FullName
+      +string Email
+      +string Phone
+      +string Password
+    }
+
+    class RecoverPasswordCommand {
+      +string Email
+    }
+
+    class UpdateProfileCommand {
+      +Guid UserId
+      +string FullName
+      +string Phone
+    }
+
+    class UserDto {
+      +Guid Id
+      +string FullName
+      +string Email
+      +string Phone
+      +string Status
+      +Guid AccessProfileId
+    }
+
+    class AccessProfileDto {
+      +Guid Id
+      +string Name
+      +string Role
+      +IEnumerable<string> Permission
+    }
+
+    class AuthSessionDto {
+      +Guid Id
+      +Guid UserId
+      +string Token
+      +bool IsActive
+      +DateTime ExpiresAt
+    }
+
+    class AuthResult {
+      +UserDto User
+      +AccessProfileDto AccessProfile
+      +AuthSessionDto AuthSession
+    }
+
+    class AuthApplicationService {
+      -UserRepository userRepository
+      -AccessProfileRepository accessProfileRepository
+      -AuthSessionRepository authSessionRepository
+      -PasswordHashingService passwordHashingService
+      -TokenService tokenService
+      -UnitOfWork unitOfWork
+      +Task<AuthResult> SignInAsync(SignInCommand command)
+      +Task<AuthResult> SignUpAsync(SignUpCommand command)
+      +Task RecoverPasswordAsync(RecoverPasswordCommand command)
+      +Task SignOutAsync(string token)
+    }
+
+    class UserApplicationService {
+      -UserRepository userRepository
+      -UnitOfWork unitOfWork
+      +Task<UserDto> GetProfileAsync(Guid userId)
+      +Task<UserDto> UpdateProfileAsync(UpdateProfileCommand command)
+    }
+  }
+
+  package "infrastructure" {
+    interface PasswordHashingService {
+      +string Hash(string password)
+      +bool Verify(string password, string hash)
+    }
+
+    interface TokenService {
+      +string GenerateToken(User user)
+      +string GenerateRefreshToken()
+    }
+
+    class BcryptPasswordHashingService
+    class JwtTokenService
+    class EfUserRepository
+    class EfAccessProfileRepository
+    class EfAuthSessionRepository
+  }
+
+  package "interface" {
+    class AuthController {
+      +Task<IActionResult> SignIn(SignInCommand command)
+      +Task<IActionResult> SignUp(SignUpCommand command)
+      +Task<IActionResult> RecoverPassword(RecoverPasswordCommand command)
+      +Task<IActionResult> SignOut()
+    }
+
+    class UserController {
+      +Task<IActionResult> GetProfile()
+      +Task<IActionResult> UpdateProfile(UpdateProfileCommand command)
+    }
+
+    class AccessProfileController {
+      +Task<IActionResult> GetCurrentProfile()
+    }
+  }
+}
+
+' ==========================================================
+' PLAN
+' ==========================================================
+
+package "plan" {
+  package "domain" {
+    class Plan {
+      +Guid Id
+      +string Name
+      +string Code
+      +string Description
+      +decimal Price
+      +string Currency
+      +string BillingPeriod
+      +int MaxSite
+      +int MaxDevice
+      +bool Recommended
+      +ICollection<PlanFeature> Feature
+      +void AddFeature(PlanFeature feature)
+    }
+
+    class PlanFeature {
+      +Guid Id
+      +Guid PlanId
+      +string Name
+      +string Description
+      +bool Included
+    }
+
+    class Subscription {
+      +Guid Id
+      +Guid UserId
+      +Guid WorkplaceId
+      +Guid PlanId
+      +string Status
+      +DateTime StartedAt
+      +DateTime? ExpiresAt
+      +bool AutoRenew
+      +void Activate()
+      +void Cancel()
+      +void ChangePlan(Guid newPlanId)
+    }
+
+    class Payment {
+      +Guid Id
+      +Guid SubscriptionId
+      +decimal Amount
+      +string Currency
+      +string Method
+      +string Status
+      +DateTime? PaidAt
+      +void MarkAsPaid()
+      +void MarkAsFailed()
+    }
+
+    class ServiceRequest {
+      +Guid Id
+      +Guid SubscriptionId
+      +string Type
+      +string Description
+      +string Status
+      +void Resolve()
+      +void Close()
+    }
+
+    class SubscriptionPolicyService {
+      +bool CanChangePlan(Subscription subscription)
+      +bool CanCancel(Subscription subscription)
+      +bool RequiresPayment(Plan plan)
+    }
+
+    interface PlanRepository {
+      +Task<IEnumerable<Plan>> GetAllAsync()
+      +Task<Plan?> GetByIdAsync(Guid id)
+    }
+
+    interface SubscriptionRepository {
+      +Task<Subscription?> FindActiveByUserIdAsync(Guid userId)
+      +Task<IEnumerable<Subscription>> FindByUserIdAsync(Guid userId)
+      +Task AddAsync(Subscription subscription)
+      +void Update(Subscription subscription)
+    }
+
+    interface PaymentRepository {
+      +Task<IEnumerable<Payment>> FindBySubscriptionIdAsync(Guid subscriptionId)
+      +Task AddAsync(Payment payment)
+    }
+
+    interface ServiceRequestRepository {
+      +Task<IEnumerable<ServiceRequest>> FindBySubscriptionIdAsync(Guid subscriptionId)
+      +Task AddAsync(ServiceRequest request)
+    }
+  }
+
+  package "application" {
+    class SubscribeCommand {
+      +Guid UserId
+      +Guid WorkplaceId
+      +Guid PlanId
+      +string PaymentMethod
+    }
+
+    class ChangePlanCommand {
+      +Guid UserId
+      +Guid NewPlanId
+    }
+
+    class CancelSubscriptionCommand {
+      +Guid UserId
+      +string Reason
+    }
+
+    class PlanDto {
+      +Guid Id
+      +string Name
+      +string Code
+      +decimal Price
+      +string Currency
+      +int MaxSite
+      +int MaxDevice
+      +bool Recommended
+      +IEnumerable<PlanFeatureDto> Feature
+    }
+
+    class PlanFeatureDto {
+      +Guid Id
+      +string Name
+      +string Description
+      +bool Included
+    }
+
+    class SubscriptionDto {
+      +Guid Id
+      +Guid UserId
+      +Guid WorkplaceId
+      +Guid PlanId
+      +string Status
+      +bool AutoRenew
+    }
+
+    class PaymentDto {
+      +Guid Id
+      +Guid SubscriptionId
+      +decimal Amount
+      +string Currency
+      +string Method
+      +string Status
+      +DateTime? PaidAt
+    }
+
+    class ServiceRequestDto {
+      +Guid Id
+      +Guid SubscriptionId
+      +string Type
+      +string Description
+      +string Status
+    }
+
+    class PlanSummaryDto {
+      +int TotalPlan
+      +string ActivePlanName
+      +string SubscriptionStatus
+      +decimal TotalPaid
+      +int MaxSite
+      +int MaxDevice
+    }
+
+    class PlanApplicationService {
+      -PlanRepository planRepository
+      -SubscriptionRepository subscriptionRepository
+      -PaymentRepository paymentRepository
+      -ServiceRequestRepository serviceRequestRepository
+      -SubscriptionPolicyService subscriptionPolicyService
+      -UnitOfWork unitOfWork
+      +Task<IEnumerable<PlanDto>> GetPlanAsync()
+      +Task<PlanDto> GetPlanByIdAsync(Guid id)
+      +Task<SubscriptionDto?> GetActiveSubscriptionAsync(Guid userId)
+      +Task<SubscriptionDto> SubscribeAsync(SubscribeCommand command)
+      +Task<SubscriptionDto> ChangePlanAsync(ChangePlanCommand command)
+      +Task<SubscriptionDto> CancelSubscriptionAsync(CancelSubscriptionCommand command)
+      +Task<PlanSummaryDto> GetSummaryAsync(Guid userId)
+    }
+  }
+
+  package "infrastructure" {
+    class EfPlanRepository
+    class EfSubscriptionRepository
+    class EfPaymentRepository
+    class EfServiceRequestRepository
+  }
+
+  package "interface" {
+    class PlanController {
+      +Task<IActionResult> GetPlan()
+      +Task<IActionResult> GetPlanById(Guid id)
+    }
+
+    class SubscriptionController {
+      +Task<IActionResult> GetActive()
+      +Task<IActionResult> Subscribe(SubscribeCommand command)
+      +Task<IActionResult> ChangePlan(ChangePlanCommand command)
+      +Task<IActionResult> Cancel(CancelSubscriptionCommand command)
+    }
+
+    class PaymentController {
+      +Task<IActionResult> GetPayment()
+    }
+  }
+}
+
+' ==========================================================
+' WORKPLACE
+' ==========================================================
+
+package "workplace" {
+  package "domain" {
+    class Workplace {
+      +Guid Id
+      +Guid OwnerId
+      +string Name
+      +string Description
+      +ICollection<Site> Site
+      +void Rename(string name)
+    }
+
+    class Site {
+      +Guid Id
+      +Guid WorkplaceId
+      +string Name
+      +string Address
+      +string Type
+      +string Status
+      +decimal WaterConsumption
+      +decimal GasConsumption
+      +int ActiveSensor
+      +int ActiveIncident
+      +void Activate()
+      +void SetMaintenance()
+      +void UpdateConsumption(decimal water, decimal gas)
+    }
+
+    class SiteMember {
+      +Guid Id
+      +Guid SiteId
+      +Guid UserId
+      +string FullName
+      +string Email
+      +string Role
+      +void ChangeRole(string role)
+    }
+
+    class SiteDeviceAssignment {
+      +Guid Id
+      +Guid SiteId
+      +Guid DeviceId
+      +string DeviceName
+      +string DeviceType
+      +string Status
+      +void Activate()
+      +void Deactivate()
+    }
+
+    interface WorkplaceRepository {
+      +Task<Workplace?> FindByOwnerIdAsync(Guid ownerId)
+      +Task<Workplace?> FindByIdAsync(Guid id)
+      +Task AddAsync(Workplace workplace)
+      +void Update(Workplace workplace)
+    }
+
+    interface SiteRepository {
+      +Task<IEnumerable<Site>> FindByWorkplaceIdAsync(Guid workplaceId)
+      +Task<Site?> FindByIdAsync(Guid siteId)
+      +Task AddAsync(Site site)
+      +void Update(Site site)
+      +void Delete(Site site)
+    }
+
+    interface SiteMemberRepository {
+      +Task<IEnumerable<SiteMember>> FindBySiteIdAsync(Guid siteId)
+      +Task AddAsync(SiteMember member)
+    }
+
+    interface SiteDeviceAssignmentRepository {
+      +Task<IEnumerable<SiteDeviceAssignment>> FindBySiteIdAsync(Guid siteId)
+      +Task AddAsync(SiteDeviceAssignment assignment)
+    }
+  }
+
+  package "application" {
+    class CreateSiteCommand {
+      +Guid WorkplaceId
+      +string Name
+      +string Address
+      +string Type
+    }
+
+    class AssignMemberToSiteCommand {
+      +Guid SiteId
+      +Guid UserId
+      +string FullName
+      +string Email
+      +string Role
+    }
+
+    class AssignDeviceToSiteCommand {
+      +Guid SiteId
+      +Guid DeviceId
+      +string DeviceName
+      +string DeviceType
+    }
+
+    class WorkplaceDto {
+      +Guid Id
+      +Guid OwnerId
+      +string Name
+      +string Description
+    }
+
+    class SiteDto {
+      +Guid Id
+      +Guid WorkplaceId
+      +string Name
+      +string Address
+      +string Type
+      +string Status
+      +decimal WaterConsumption
+      +decimal GasConsumption
+      +int ActiveSensor
+      +int ActiveIncident
+    }
+
+    class SiteMemberDto {
+      +Guid Id
+      +Guid SiteId
+      +Guid UserId
+      +string FullName
+      +string Email
+      +string Role
+    }
+
+    class SiteDeviceAssignmentDto {
+      +Guid Id
+      +Guid SiteId
+      +Guid DeviceId
+      +string DeviceName
+      +string DeviceType
+      +string Status
+    }
+
+    class WorkplaceSummaryDto {
+      +int TotalSite
+      +int ActiveSite
+      +int MaintenanceSite
+      +int TotalMember
+      +int TotalDeviceAssignment
+      +decimal WaterConsumption
+      +decimal GasConsumption
+    }
+
+    class WorkplaceApplicationService {
+      -WorkplaceRepository workplaceRepository
+      -SiteRepository siteRepository
+      -SiteMemberRepository siteMemberRepository
+      -SiteDeviceAssignmentRepository siteDeviceAssignmentRepository
+      -UnitOfWork unitOfWork
+      +Task<WorkplaceDto?> GetWorkplaceAsync(Guid ownerId)
+      +Task<IEnumerable<SiteDto>> GetSiteAsync(Guid workplaceId, string type)
+      +Task<SiteDto> CreateSiteAsync(CreateSiteCommand command)
+      +Task AssignMemberToSiteAsync(AssignMemberToSiteCommand command)
+      +Task AssignDeviceToSiteAsync(AssignDeviceToSiteCommand command)
+      +Task<WorkplaceSummaryDto> GetSummaryAsync(Guid workplaceId)
+    }
+  }
+
+  package "infrastructure" {
+    class EfWorkplaceRepository
+    class EfSiteRepository
+    class EfSiteMemberRepository
+    class EfSiteDeviceAssignmentRepository
+  }
+
+  package "interface" {
+    class WorkplaceController {
+      +Task<IActionResult> GetCurrentWorkplace()
+      +Task<IActionResult> GetSummary()
+    }
+
+    class SiteController {
+      +Task<IActionResult> GetSite(string type)
+      +Task<IActionResult> GetSiteById(Guid id)
+      +Task<IActionResult> CreateSite(CreateSiteCommand command)
+      +Task<IActionResult> DeleteSite(Guid id)
+    }
+
+    class SiteMemberController {
+      +Task<IActionResult> GetMemberBySite(Guid siteId)
+      +Task<IActionResult> AssignMember(AssignMemberToSiteCommand command)
+    }
+
+    class SiteDeviceAssignmentController {
+      +Task<IActionResult> GetAssignmentBySite(Guid siteId)
+      +Task<IActionResult> AssignDevice(AssignDeviceToSiteCommand command)
+    }
+  }
+}
+
+' ==========================================================
+' DEVICE CONTROL
+' ==========================================================
+
+package "device-control" {
+  package "domain" {
+    class Device {
+      +Guid Id
+      +Guid SiteId
+      +string Name
+      +string Type
+      +string Status
+      +ICollection<Sensor> Sensor
+      +ICollection<Valve> Valve
+      +ICollection<DeviceCommand> Command
+      +bool IsOnline()
+      +void SetOnline()
+      +void SetOffline()
+    }
+
+    class Sensor {
+      +Guid Id
+      +Guid DeviceId
+      +Guid SiteId
+      +string Name
+      +string ResourceType
+      +decimal CurrentValue
+      +string Unit
+      +decimal Threshold
+      +string Status
+      +bool HasExceededThreshold()
+      +void UpdateReading(decimal value)
+    }
+
+    class Valve {
+      +Guid Id
+      +Guid DeviceId
+      +Guid SiteId
+      +string Name
+      +string ResourceType
+      +string Status
+      +int OpeningPercentage
+      +void Open()
+      +void Close()
+    }
+
+    class DeviceCommand {
+      +Guid Id
+      +Guid DeviceId
+      +string CommandType
+      +string Status
+      +void MarkExecuted()
+      +void MarkFailed()
+    }
+
+    interface DeviceRepository {
+      +Task<IEnumerable<Device>> GetAllAsync()
+      +Task<Device?> FindByIdAsync(Guid id)
+      +Task<IEnumerable<Device>> FindBySiteIdAsync(Guid siteId)
+      +Task AddAsync(Device device)
+      +void Update(Device device)
+    }
+
+    interface SensorRepository {
+      +Task<IEnumerable<Sensor>> FindByDeviceIdAsync(Guid deviceId)
+      +Task AddAsync(Sensor sensor)
+      +void Update(Sensor sensor)
+    }
+
+    interface ValveRepository {
+      +Task<Valve?> FindByIdAsync(Guid id)
+      +Task<IEnumerable<Valve>> FindByDeviceIdAsync(Guid deviceId)
+      +void Update(Valve valve)
+    }
+
+    interface DeviceCommandRepository {
+      +Task<IEnumerable<DeviceCommand>> FindByDeviceIdAsync(Guid deviceId)
+      +Task AddAsync(DeviceCommand command)
+    }
+  }
+
+  package "application" {
+    class CreateDeviceCommand {
+      +Guid SiteId
+      +string Name
+      +string Type
+    }
+
+    class LinkSensorCommand {
+      +Guid DeviceId
+      +Guid SiteId
+      +string Name
+      +string ResourceType
+      +string Unit
+      +decimal Threshold
+    }
+
+    class ExecuteDeviceCommand {
+      +Guid DeviceId
+      +string CommandType
+    }
+
+    class DeviceDto {
+      +Guid Id
+      +Guid SiteId
+      +string Name
+      +string Type
+      +string Status
+      +IEnumerable<SensorDto> Sensor
+      +IEnumerable<ValveDto> Valve
+      +IEnumerable<DeviceCommandDto> Command
+    }
+
+    class SensorDto {
+      +Guid Id
+      +string Name
+      +string ResourceType
+      +decimal CurrentValue
+      +string Unit
+      +decimal Threshold
+      +bool HasExceededThreshold
+    }
+
+    class ValveDto {
+      +Guid Id
+      +string Name
+      +string ResourceType
+      +string Status
+      +int OpeningPercentage
+      +bool IsOpen
+    }
+
+    class DeviceCommandDto {
+      +Guid Id
+      +Guid DeviceId
+      +string CommandType
+      +string Status
+    }
+
+    class DeviceControlSummaryDto {
+      +int TotalDevice
+      +int ActiveSensor
+      +int ClosedValve
+      +int TotalSensor
+      +int TotalValve
+      +int TotalCommand
+    }
+
+    class DeviceControlApplicationService {
+      -DeviceRepository deviceRepository
+      -SensorRepository sensorRepository
+      -ValveRepository valveRepository
+      -DeviceCommandRepository commandRepository
+      -UnitOfWork unitOfWork
+      +Task<IEnumerable<DeviceDto>> GetDeviceAsync()
+      +Task<DeviceDto> CreateDeviceAsync(CreateDeviceCommand command)
+      +Task<SensorDto> LinkSensorAsync(LinkSensorCommand command)
+      +Task<ValveDto> OpenValveAsync(Guid valveId)
+      +Task<ValveDto> CloseValveAsync(Guid valveId)
+      +Task<DeviceCommandDto> ExecuteCommandAsync(ExecuteDeviceCommand command)
+      +Task<DeviceControlSummaryDto> GetSummaryAsync()
+    }
+  }
+
+  package "infrastructure" {
+    class EfDeviceRepository
+    class EfSensorRepository
+    class EfValveRepository
+    class EfDeviceCommandRepository
+  }
+
+  package "interface" {
+    class DeviceController {
+      +Task<IActionResult> GetDevice()
+      +Task<IActionResult> CreateDevice(CreateDeviceCommand command)
+    }
+
+    class SensorController {
+      +Task<IActionResult> LinkSensor(LinkSensorCommand command)
+    }
+
+    class ValveController {
+      +Task<IActionResult> OpenValve(Guid id)
+      +Task<IActionResult> CloseValve(Guid id)
+    }
+
+    class DeviceCommandController {
+      +Task<IActionResult> ExecuteCommand(ExecuteDeviceCommand command)
+      +Task<IActionResult> GetCommand(Guid deviceId)
+    }
+  }
+}
+
+' ==========================================================
+' MONITORING
+' ==========================================================
+
+package "monitoring" {
+  package "domain" {
+    class MonitoringSession {
+      +Guid Id
+      +bool IsActive
+      +int TotalReading
+      +int TotalAnomaly
+      +DateTime StartedAt
+      +DateTime? FinishedAt
+      +void AddReading()
+      +void AddAnomaly()
+      +void Finish()
+    }
+
+    class Reading {
+      +Guid Id
+      +Guid MonitoringSessionId
+      +Guid SensorId
+      +Guid SiteId
+      +string ResourceType
+      +decimal Value
+      +string Unit
+      +string Status
+      +DateTime MeasuredAt
+      +bool IsCritical()
+    }
+
+    class Anomaly {
+      +Guid Id
+      +Guid ReadingId
+      +Guid SiteId
+      +string Severity
+      +string Description
+      +string Status
+      +void Resolve()
+      +void Close()
+    }
+
+    class Report {
+      +Guid Id
+      +Guid SiteId
+      +string Period
+      +decimal TotalWater
+      +decimal TotalGas
+      +int AnomalyCount
+      +DateTime GeneratedAt
+    }
+
+    class AnomalyDetectionService {
+      +Anomaly? DetectFromReading(Reading reading)
+    }
+
+    interface MonitoringSessionRepository {
+      +Task<MonitoringSession?> FindActiveAsync()
+      +Task AddAsync(MonitoringSession session)
+      +void Update(MonitoringSession session)
+    }
+
+    interface ReadingRepository {
+      +Task<IEnumerable<Reading>> GetAllAsync()
+      +Task AddAsync(Reading reading)
+    }
+
+    interface AnomalyRepository {
+      +Task<IEnumerable<Anomaly>> GetAllAsync()
+      +Task AddAsync(Anomaly anomaly)
+    }
+
+    interface ReportRepository {
+      +Task<IEnumerable<Report>> GetAllAsync()
+      +Task AddAsync(Report report)
+    }
+  }
+
+  package "application" {
+    class CreateReadingCommand {
+      +Guid SensorId
+      +Guid SiteId
+      +string ResourceType
+      +decimal Value
+      +string Unit
+    }
+
+    class CreateReportCommand {
+      +Guid SiteId
+      +string Period
+    }
+
+    class MonitoringSummaryDto {
+      +decimal TotalWater
+      +decimal TotalGas
+      +int CriticalAnomaly
+    }
+
+    class MonitoringApplicationService {
+      -MonitoringSessionRepository monitoringSessionRepository
+      -ReadingRepository readingRepository
+      -AnomalyRepository anomalyRepository
+      -ReportRepository reportRepository
+      -AnomalyDetectionService anomalyDetectionService
+      -UnitOfWork unitOfWork
+      +Task<MonitoringSummaryDto> GetSummaryAsync()
+      +Task<MonitoringSession> GetActiveSessionAsync()
+      +Task<IEnumerable<Reading>> GetReadingAsync()
+      +Task<Reading> CreateReadingAsync(CreateReadingCommand command)
+      +Task<IEnumerable<Anomaly>> GetAnomalyAsync()
+      +Task<Report> CreateReportAsync(CreateReportCommand command)
+    }
+  }
+
+  package "infrastructure" {
+    class EfMonitoringSessionRepository
+    class EfReadingRepository
+    class EfAnomalyRepository
+    class EfReportRepository
+  }
+
+  package "interface" {
+    class MonitoringController {
+      +Task<IActionResult> GetSummary()
+      +Task<IActionResult> GetActiveSession()
+    }
+
+    class ReadingController {
+      +Task<IActionResult> GetReading()
+      +Task<IActionResult> CreateReading(CreateReadingCommand command)
+    }
+
+    class ReportController {
+      +Task<IActionResult> GetReport()
+      +Task<IActionResult> CreateReport(CreateReportCommand command)
+    }
+  }
+}
+
+' ==========================================================
+' NOTIFICATION
+' ==========================================================
+
+package "notification" {
+  package "domain" {
+    class Alert {
+      +Guid Id
+      +Guid SiteId
+      +Guid SensorId
+      +string ResourceType
+      +string Title
+      +string Description
+      +string Severity
+      +string Status
+      +void Resolve()
+      +void Close()
+    }
+
+    class Threshold {
+      +Guid Id
+      +Guid SiteId
+      +Guid SensorId
+      +string ResourceType
+      +decimal WarningLimit
+      +decimal CriticalLimit
+      +string Unit
+      +bool Enabled
+      +void Enable()
+      +void Disable()
+    }
+
+    class Incident {
+      +Guid Id
+      +Guid AlertId
+      +Guid SiteId
+      +string Title
+      +string Description
+      +string Priority
+      +string Status
+      +Guid? AssignedTo
+      +void AssignTo(Guid userId)
+      +void Resolve()
+      +void Close()
+    }
+
+    class NotificationChannel {
+      +Guid Id
+      +string Name
+      +string Type
+      +string Destination
+      +bool Enabled
+      +void Enable()
+      +void Disable()
+    }
+
+    class AlertDelivery {
+      +Guid Id
+      +Guid AlertId
+      +Guid ChannelId
+      +string Status
+      +DateTime? SentAt
+      +void MarkSent()
+      +void MarkFailed()
+    }
+
+    class AlertPolicyService {
+      +Incident? CreateIncidentIfRequired(Alert alert)
+    }
+
+    interface AlertRepository {
+      +Task<IEnumerable<Alert>> GetAllAsync()
+      +Task<Alert?> FindByIdAsync(Guid id)
+      +Task AddAsync(Alert alert)
+      +void Update(Alert alert)
+    }
+
+    interface ThresholdRepository {
+      +Task<IEnumerable<Threshold>> GetAllAsync()
+      +Task AddAsync(Threshold threshold)
+    }
+
+    interface IncidentRepository {
+      +Task<IEnumerable<Incident>> GetAllAsync()
+      +Task AddAsync(Incident incident)
+      +void Update(Incident incident)
+    }
+
+    interface NotificationChannelRepository {
+      +Task<IEnumerable<NotificationChannel>> GetEnabledAsync()
+    }
+
+    interface AlertDeliveryRepository {
+      +Task<IEnumerable<AlertDelivery>> GetAllAsync()
+      +Task AddAsync(AlertDelivery delivery)
+    }
+  }
+
+  package "application" {
+    class CreateAlertCommand {
+      +Guid SiteId
+      +Guid SensorId
+      +string ResourceType
+      +string Title
+      +string Description
+      +string Severity
+    }
+
+    class CreateThresholdCommand {
+      +Guid SiteId
+      +Guid SensorId
+      +string ResourceType
+      +decimal WarningLimit
+      +decimal CriticalLimit
+      +string Unit
+    }
+
+    class NotificationSummaryDto {
+      +int TotalAlert
+      +int CriticalAlert
+      +int OpenIncident
+      +int ActiveThreshold
+      +int ChannelEnabled
+      +int DeliverySent
+    }
+
+    class NotificationApplicationService {
+      -AlertRepository alertRepository
+      -ThresholdRepository thresholdRepository
+      -IncidentRepository incidentRepository
+      -NotificationChannelRepository notificationChannelRepository
+      -AlertDeliveryRepository alertDeliveryRepository
+      -AlertPolicyService alertPolicyService
+      -UnitOfWork unitOfWork
+      +Task<IEnumerable<Alert>> GetAlertAsync()
+      +Task<Alert> CreateAlertAsync(CreateAlertCommand command)
+      +Task<Alert> ResolveAlertAsync(Guid alertId)
+      +Task<Alert> CloseAlertAsync(Guid alertId)
+      +Task<Threshold> CreateThresholdAsync(CreateThresholdCommand command)
+      +Task<IEnumerable<AlertDelivery>> SendAlertAsync(Guid alertId)
+      +Task<NotificationSummaryDto> GetSummaryAsync()
+    }
+  }
+
+  package "infrastructure" {
+    class EfAlertRepository
+    class EfThresholdRepository
+    class EfIncidentRepository
+    class EfNotificationChannelRepository
+    class EfAlertDeliveryRepository
+  }
+
+  package "interface" {
+    class AlertController {
+      +Task<IActionResult> GetAlert()
+      +Task<IActionResult> CreateAlert(CreateAlertCommand command)
+      +Task<IActionResult> ResolveAlert(Guid id)
+      +Task<IActionResult> CloseAlert(Guid id)
+      +Task<IActionResult> SendAlert(Guid id)
+    }
+
+    class ThresholdController {
+      +Task<IActionResult> GetThreshold()
+      +Task<IActionResult> CreateThreshold(CreateThresholdCommand command)
+    }
+
+    class IncidentController {
+      +Task<IActionResult> GetIncident()
+    }
+  }
+}
+
+' ==========================================================
+' SUPPORT
+' ==========================================================
+
+package "support" {
+  package "domain" {
+    class SupportTicket {
+      +Guid Id
+      +Guid UserId
+      +Guid SiteId
+      +string Title
+      +string Description
+      +string Category
+      +string Priority
+      +string Status
+      +Guid? AssignedAgentId
+      +void AssignTo(Guid agentId)
+      +void Resolve()
+      +void Close()
+    }
+
+    class SupportMessage {
+      +Guid Id
+      +Guid TicketId
+      +Guid SenderId
+      +string SenderType
+      +string Content
+      +string Status
+      +void MarkAsRead()
+    }
+
+    class SupportAgent {
+      +Guid Id
+      +string FullName
+      +string Email
+      +string Specialty
+      +string Status
+      +void SetAvailable()
+      +void SetBusy()
+    }
+
+    class SupportConversation {
+      +Guid Id
+      +Guid TicketId
+      +string Status
+      +void Close()
+    }
+
+    class KnowledgeArticle {
+      +Guid Id
+      +string Title
+      +string Summary
+      +string Category
+      +string Content
+      +int HelpfulCount
+      +void MarkHelpful()
+    }
+
+    class SupportPriorityService {
+      +string ResolvePriority(string category)
+      +bool ShouldAssignImmediately(SupportTicket ticket)
+    }
+
+    interface SupportTicketRepository {
+      +Task<IEnumerable<SupportTicket>> GetAllAsync()
+      +Task<SupportTicket?> FindByIdAsync(Guid id)
+      +Task AddAsync(SupportTicket ticket)
+      +void Update(SupportTicket ticket)
+    }
+
+    interface SupportMessageRepository {
+      +Task<IEnumerable<SupportMessage>> FindByTicketIdAsync(Guid ticketId)
+      +Task AddAsync(SupportMessage message)
+    }
+
+    interface SupportAgentRepository {
+      +Task<IEnumerable<SupportAgent>> GetAllAsync()
+      +Task<SupportAgent?> FindAvailableBySpecialtyAsync(string specialty)
+      +void Update(SupportAgent agent)
+    }
+
+    interface KnowledgeArticleRepository {
+      +Task<IEnumerable<KnowledgeArticle>> GetAllAsync()
+    }
+  }
+
+  package "application" {
+    class CreateSupportTicketCommand {
+      +Guid UserId
+      +Guid SiteId
+      +string Title
+      +string Description
+      +string Category
+    }
+
+    class SendSupportMessageCommand {
+      +Guid TicketId
+      +Guid SenderId
+      +string SenderType
+      +string Content
+    }
+
+    class SupportSummaryDto {
+      +int TotalTicket
+      +int OpenTicket
+      +int AssignedTicket
+      +int ResolvedTicket
+      +int AvailableAgent
+      +int TotalArticle
+    }
+
+    class SupportApplicationService {
+      -SupportTicketRepository supportTicketRepository
+      -SupportMessageRepository supportMessageRepository
+      -SupportAgentRepository supportAgentRepository
+      -KnowledgeArticleRepository knowledgeArticleRepository
+      -SupportPriorityService supportPriorityService
+      -UnitOfWork unitOfWork
+      +Task<IEnumerable<SupportTicket>> GetTicketAsync()
+      +Task<SupportTicket> CreateTicketAsync(CreateSupportTicketCommand command)
+      +Task<SupportTicket> ResolveTicketAsync(Guid ticketId)
+      +Task<SupportTicket> CloseTicketAsync(Guid ticketId)
+      +Task<SupportMessage> SendMessageAsync(SendSupportMessageCommand command)
+      +Task<IEnumerable<SupportAgent>> GetAgentAsync()
+      +Task<IEnumerable<KnowledgeArticle>> GetArticleAsync()
+      +Task<SupportSummaryDto> GetSummaryAsync()
+    }
+  }
+
+  package "infrastructure" {
+    class EfSupportTicketRepository
+    class EfSupportMessageRepository
+    class EfSupportAgentRepository
+    class EfKnowledgeArticleRepository
+  }
+
+  package "interface" {
+    class SupportTicketController {
+      +Task<IActionResult> GetTicket()
+      +Task<IActionResult> CreateTicket(CreateSupportTicketCommand command)
+      +Task<IActionResult> ResolveTicket(Guid id)
+      +Task<IActionResult> CloseTicket(Guid id)
+    }
+
+    class SupportMessageController {
+      +Task<IActionResult> SendMessage(SendSupportMessageCommand command)
+    }
+
+    class KnowledgeArticleController {
+      +Task<IActionResult> GetArticle()
+    }
+  }
+}
+
+' ==========================================================
+' INHERITANCE
+' ==========================================================
+
+BaseEntity <|-- User
+BaseEntity <|-- AccessProfile
+BaseEntity <|-- Permission
+BaseEntity <|-- AuthSession
+BaseEntity <|-- Plan
+BaseEntity <|-- PlanFeature
+BaseEntity <|-- Subscription
+BaseEntity <|-- Payment
+BaseEntity <|-- ServiceRequest
+BaseEntity <|-- Workplace
+BaseEntity <|-- Site
+BaseEntity <|-- SiteMember
+BaseEntity <|-- SiteDeviceAssignment
+BaseEntity <|-- Device
+BaseEntity <|-- Sensor
+BaseEntity <|-- Valve
+BaseEntity <|-- DeviceCommand
+BaseEntity <|-- MonitoringSession
+BaseEntity <|-- Reading
+BaseEntity <|-- Anomaly
+BaseEntity <|-- Report
+BaseEntity <|-- Alert
+BaseEntity <|-- Threshold
+BaseEntity <|-- Incident
+BaseEntity <|-- NotificationChannel
+BaseEntity <|-- AlertDelivery
+BaseEntity <|-- SupportTicket
+BaseEntity <|-- SupportMessage
+BaseEntity <|-- SupportAgent
+BaseEntity <|-- SupportConversation
+BaseEntity <|-- KnowledgeArticle
+
+' ==========================================================
+' IAM RELATION
+' ==========================================================
+
+User --> AccessProfile : accessProfileId
+AccessProfile "1" o-- "*" Permission
+AuthSession --> User : userId
+
+AuthApplicationService --> UserRepository
+AuthApplicationService --> AccessProfileRepository
+AuthApplicationService --> AuthSessionRepository
+AuthApplicationService --> PasswordHashingService
+AuthApplicationService --> TokenService
+AuthApplicationService --> UnitOfWork
+
+UserApplicationService --> UserRepository
+UserApplicationService --> UnitOfWork
+
+UserRepository <|.. EfUserRepository
+AccessProfileRepository <|.. EfAccessProfileRepository
+AuthSessionRepository <|.. EfAuthSessionRepository
+PasswordHashingService <|.. BcryptPasswordHashingService
+TokenService <|.. JwtTokenService
+
+AuthController --> AuthApplicationService
+UserController --> UserApplicationService
+AccessProfileController --> AuthApplicationService
+
+' ==========================================================
+' PLAN RELATION
+' ==========================================================
+
+Plan "1" o-- "*" PlanFeature
+Subscription --> User : userId
+Subscription --> Workplace : workplaceId
+Subscription --> Plan : planId
+Payment --> Subscription : subscriptionId
+ServiceRequest --> Subscription : subscriptionId
+
+PlanApplicationService --> PlanRepository
+PlanApplicationService --> SubscriptionRepository
+PlanApplicationService --> PaymentRepository
+PlanApplicationService --> ServiceRequestRepository
+PlanApplicationService --> SubscriptionPolicyService
+PlanApplicationService --> UnitOfWork
+
+PlanRepository <|.. EfPlanRepository
+SubscriptionRepository <|.. EfSubscriptionRepository
+PaymentRepository <|.. EfPaymentRepository
+ServiceRequestRepository <|.. EfServiceRequestRepository
+
+PlanController --> PlanApplicationService
+SubscriptionController --> PlanApplicationService
+PaymentController --> PlanApplicationService
+
+' ==========================================================
+' WORKPLACE RELATION
+' ==========================================================
+
+Workplace --> User : ownerId
+Workplace "1" o-- "*" Site
+Site "1" o-- "*" SiteMember
+Site "1" o-- "*" SiteDeviceAssignment
+SiteMember --> User : userId
+SiteDeviceAssignment --> Device : deviceId
+
+WorkplaceApplicationService --> WorkplaceRepository
+WorkplaceApplicationService --> SiteRepository
+WorkplaceApplicationService --> SiteMemberRepository
+WorkplaceApplicationService --> SiteDeviceAssignmentRepository
+WorkplaceApplicationService --> UnitOfWork
+
+WorkplaceRepository <|.. EfWorkplaceRepository
+SiteRepository <|.. EfSiteRepository
+SiteMemberRepository <|.. EfSiteMemberRepository
+SiteDeviceAssignmentRepository <|.. EfSiteDeviceAssignmentRepository
+
+WorkplaceController --> WorkplaceApplicationService
+SiteController --> WorkplaceApplicationService
+SiteMemberController --> WorkplaceApplicationService
+SiteDeviceAssignmentController --> WorkplaceApplicationService
+
+' ==========================================================
+' DEVICE CONTROL RELATION
+' ==========================================================
+
+Site "1" o-- "*" Device
+Device "1" o-- "*" Sensor
+Device "1" o-- "*" Valve
+Device "1" o-- "*" DeviceCommand
+Sensor --> Site : siteId
+Valve --> Site : siteId
+
+DeviceControlApplicationService --> DeviceRepository
+DeviceControlApplicationService --> SensorRepository
+DeviceControlApplicationService --> ValveRepository
+DeviceControlApplicationService --> DeviceCommandRepository
+DeviceControlApplicationService --> UnitOfWork
+
+DeviceRepository <|.. EfDeviceRepository
+SensorRepository <|.. EfSensorRepository
+ValveRepository <|.. EfValveRepository
+DeviceCommandRepository <|.. EfDeviceCommandRepository
+
+DeviceController --> DeviceControlApplicationService
+SensorController --> DeviceControlApplicationService
+ValveController --> DeviceControlApplicationService
+DeviceCommandController --> DeviceControlApplicationService
+
+' ==========================================================
+' MONITORING RELATION
+' ==========================================================
+
+MonitoringSession "1" o-- "*" Reading
+Reading --> Sensor : sensorId
+Reading --> Site : siteId
+Reading "1" --> "0..1" Anomaly : readingId
+Anomaly --> Site : siteId
+Report --> Site : siteId
+
+MonitoringApplicationService --> MonitoringSessionRepository
+MonitoringApplicationService --> ReadingRepository
+MonitoringApplicationService --> AnomalyRepository
+MonitoringApplicationService --> ReportRepository
+MonitoringApplicationService --> AnomalyDetectionService
+MonitoringApplicationService --> UnitOfWork
+
+MonitoringSessionRepository <|.. EfMonitoringSessionRepository
+ReadingRepository <|.. EfReadingRepository
+AnomalyRepository <|.. EfAnomalyRepository
+ReportRepository <|.. EfReportRepository
+
+MonitoringController --> MonitoringApplicationService
+ReadingController --> MonitoringApplicationService
+ReportController --> MonitoringApplicationService
+
+' ==========================================================
+' NOTIFICATION RELATION
+' ==========================================================
+
+Alert --> Site : siteId
+Alert --> Sensor : sensorId
+Threshold --> Site : siteId
+Threshold --> Sensor : sensorId
+Alert "1" --> "0..*" Incident
+Alert "1" --> "0..*" AlertDelivery
+Incident --> Site : siteId
+AlertDelivery --> NotificationChannel : channelId
+
+NotificationApplicationService --> AlertRepository
+NotificationApplicationService --> ThresholdRepository
+NotificationApplicationService --> IncidentRepository
+NotificationApplicationService --> NotificationChannelRepository
+NotificationApplicationService --> AlertDeliveryRepository
+NotificationApplicationService --> AlertPolicyService
+NotificationApplicationService --> UnitOfWork
+
+AlertRepository <|.. EfAlertRepository
+ThresholdRepository <|.. EfThresholdRepository
+IncidentRepository <|.. EfIncidentRepository
+NotificationChannelRepository <|.. EfNotificationChannelRepository
+AlertDeliveryRepository <|.. EfAlertDeliveryRepository
+
+AlertController --> NotificationApplicationService
+ThresholdController --> NotificationApplicationService
+IncidentController --> NotificationApplicationService
+
+' ==========================================================
+' SUPPORT RELATION
+' ==========================================================
+
+SupportTicket --> User : userId
+SupportTicket --> Site : siteId
+SupportTicket --> SupportAgent : assignedAgentId
+SupportTicket "1" o-- "*" SupportMessage
+SupportConversation --> SupportTicket : ticketId
+
+SupportApplicationService --> SupportTicketRepository
+SupportApplicationService --> SupportMessageRepository
+SupportApplicationService --> SupportAgentRepository
+SupportApplicationService --> KnowledgeArticleRepository
+SupportApplicationService --> SupportPriorityService
+SupportApplicationService --> UnitOfWork
+
+SupportTicketRepository <|.. EfSupportTicketRepository
+SupportMessageRepository <|.. EfSupportMessageRepository
+SupportAgentRepository <|.. EfSupportAgentRepository
+KnowledgeArticleRepository <|.. EfKnowledgeArticleRepository
+
+SupportTicketController --> SupportApplicationService
+SupportMessageController --> SupportApplicationService
+KnowledgeArticleController --> SupportApplicationService
+
+' ==========================================================
+' PERSISTENCE RELATION
+' ==========================================================
+
+EfUnitOfWork ..|> UnitOfWork
+EfUnitOfWork --> LowCortisolDbContext
+
+EfUserRepository --> LowCortisolDbContext
+EfAccessProfileRepository --> LowCortisolDbContext
+EfAuthSessionRepository --> LowCortisolDbContext
+
+EfPlanRepository --> LowCortisolDbContext
+EfSubscriptionRepository --> LowCortisolDbContext
+EfPaymentRepository --> LowCortisolDbContext
+EfServiceRequestRepository --> LowCortisolDbContext
+
+EfWorkplaceRepository --> LowCortisolDbContext
+EfSiteRepository --> LowCortisolDbContext
+EfSiteMemberRepository --> LowCortisolDbContext
+EfSiteDeviceAssignmentRepository --> LowCortisolDbContext
+
+EfDeviceRepository --> LowCortisolDbContext
+EfSensorRepository --> LowCortisolDbContext
+EfValveRepository --> LowCortisolDbContext
+EfDeviceCommandRepository --> LowCortisolDbContext
+
+EfMonitoringSessionRepository --> LowCortisolDbContext
+EfReadingRepository --> LowCortisolDbContext
+EfAnomalyRepository --> LowCortisolDbContext
+EfReportRepository --> LowCortisolDbContext
+
+EfAlertRepository --> LowCortisolDbContext
+EfThresholdRepository --> LowCortisolDbContext
+EfIncidentRepository --> LowCortisolDbContext
+EfNotificationChannelRepository --> LowCortisolDbContext
+EfAlertDeliveryRepository --> LowCortisolDbContext
+
+EfSupportTicketRepository --> LowCortisolDbContext
+EfSupportMessageRepository --> LowCortisolDbContext
+EfSupportAgentRepository --> LowCortisolDbContext
+EfKnowledgeArticleRepository --> LowCortisolDbContext
+
+note bottom
+Backend real proyectado para C#:
+ASP.NET Core Web API + Entity Framework Core.
+Las clases se mantienen en singular porque cada una representa
+una entidad, servicio, repositorio, controller o caso de uso individual.
+Los endpoints REST pueden permanecer en plural porque representan colecciones.
+end note
+
+' ==========================================================
+' EXTRA DEPENDENCY CONNECTIONS
+' These dependencies avoid isolated classes in the diagram.
+' ==========================================================
+
+' =========================
+' Shared usage
+' =========================
+
+AuthController ..> ApiResponse
+UserController ..> ApiResponse
+AccessProfileController ..> ApiResponse
+
+PlanController ..> ApiResponse
+SubscriptionController ..> ApiResponse
+PaymentController ..> ApiResponse
+
+WorkplaceController ..> ApiResponse
+SiteController ..> ApiResponse
+SiteMemberController ..> ApiResponse
+SiteDeviceAssignmentController ..> ApiResponse
+
+DeviceController ..> ApiResponse
+SensorController ..> ApiResponse
+ValveController ..> ApiResponse
+DeviceCommandController ..> ApiResponse
+
+MonitoringController ..> ApiResponse
+ReadingController ..> ApiResponse
+ReportController ..> ApiResponse
+
+AlertController ..> ApiResponse
+ThresholdController ..> ApiResponse
+IncidentController ..> ApiResponse
+
+SupportTicketController ..> ApiResponse
+SupportMessageController ..> ApiResponse
+KnowledgeArticleController ..> ApiResponse
+
+PlanController ..> PageResult
+SiteController ..> PageResult
+DeviceController ..> PageResult
+ReadingController ..> PageResult
+AlertController ..> PageResult
+SupportTicketController ..> PageResult
+
+AuthApplicationService --> DateTimeProvider
+PlanApplicationService --> DateTimeProvider
+WorkplaceApplicationService --> DateTimeProvider
+DeviceControlApplicationService --> DateTimeProvider
+MonitoringApplicationService --> DateTimeProvider
+NotificationApplicationService --> DateTimeProvider
+SupportApplicationService --> DateTimeProvider
+
+Repository <|.. UserRepository
+Repository <|.. PlanRepository
+Repository <|.. SiteRepository
+Repository <|.. DeviceRepository
+Repository <|.. ReadingRepository
+Repository <|.. AlertRepository
+Repository <|.. SupportTicketRepository
+
+' =========================
+' IAM command and dto usage
+' =========================
+
+AuthController ..> SignInCommand
+AuthController ..> SignUpCommand
+AuthController ..> RecoverPasswordCommand
+UserController ..> UpdateProfileCommand
+
+AuthApplicationService ..> SignInCommand
+AuthApplicationService ..> SignUpCommand
+AuthApplicationService ..> RecoverPasswordCommand
+UserApplicationService ..> UpdateProfileCommand
+
+AuthApplicationService ..> AuthResult
+AuthResult --> UserDto
+AuthResult --> AccessProfileDto
+AuthResult --> AuthSessionDto
+
+UserApplicationService ..> UserDto
+AccessProfileController ..> AccessProfileDto
+AuthApplicationService ..> AuthSessionDto
+
+UserDto ..> User
+AccessProfileDto ..> AccessProfile
+AuthSessionDto ..> AuthSession
+
+JwtTokenService ..> User
+BcryptPasswordHashingService ..> User
+
+EfUserRepository ..> User
+EfAccessProfileRepository ..> AccessProfile
+EfAuthSessionRepository ..> AuthSession
+
+' =========================
+' Plan command and dto usage
+' =========================
+
+PlanController ..> PlanDto
+SubscriptionController ..> SubscribeCommand
+SubscriptionController ..> ChangePlanCommand
+SubscriptionController ..> CancelSubscriptionCommand
+PaymentController ..> PaymentDto
+
+PlanApplicationService ..> SubscribeCommand
+PlanApplicationService ..> ChangePlanCommand
+PlanApplicationService ..> CancelSubscriptionCommand
+
+PlanApplicationService ..> PlanDto
+PlanApplicationService ..> PlanFeatureDto
+PlanApplicationService ..> SubscriptionDto
+PlanApplicationService ..> PaymentDto
+PlanApplicationService ..> ServiceRequestDto
+PlanApplicationService ..> PlanSummaryDto
+
+PlanDto --> PlanFeatureDto
+PlanDto ..> Plan
+PlanFeatureDto ..> PlanFeature
+SubscriptionDto ..> Subscription
+PaymentDto ..> Payment
+ServiceRequestDto ..> ServiceRequest
+PlanSummaryDto ..> Plan
+PlanSummaryDto ..> Subscription
+PlanSummaryDto ..> Payment
+
+SubscriptionPolicyService ..> Plan
+SubscriptionPolicyService ..> Subscription
+
+EfPlanRepository ..> Plan
+EfSubscriptionRepository ..> Subscription
+EfPaymentRepository ..> Payment
+EfServiceRequestRepository ..> ServiceRequest
+
+' =========================
+' Workplace command and dto usage
+' =========================
+
+SiteController ..> CreateSiteCommand
+SiteMemberController ..> AssignMemberToSiteCommand
+SiteDeviceAssignmentController ..> AssignDeviceToSiteCommand
+
+WorkplaceApplicationService ..> CreateSiteCommand
+WorkplaceApplicationService ..> AssignMemberToSiteCommand
+WorkplaceApplicationService ..> AssignDeviceToSiteCommand
+
+WorkplaceApplicationService ..> WorkplaceDto
+WorkplaceApplicationService ..> SiteDto
+WorkplaceApplicationService ..> SiteMemberDto
+WorkplaceApplicationService ..> SiteDeviceAssignmentDto
+WorkplaceApplicationService ..> WorkplaceSummaryDto
+
+WorkplaceDto ..> Workplace
+SiteDto ..> Site
+SiteMemberDto ..> SiteMember
+SiteDeviceAssignmentDto ..> SiteDeviceAssignment
+WorkplaceSummaryDto ..> Workplace
+WorkplaceSummaryDto ..> Site
+WorkplaceSummaryDto ..> SiteMember
+WorkplaceSummaryDto ..> SiteDeviceAssignment
+
+EfWorkplaceRepository ..> Workplace
+EfSiteRepository ..> Site
+EfSiteMemberRepository ..> SiteMember
+EfSiteDeviceAssignmentRepository ..> SiteDeviceAssignment
+
+' =========================
+' Device Control command and dto usage
+' =========================
+
+DeviceController ..> CreateDeviceCommand
+SensorController ..> LinkSensorCommand
+DeviceCommandController ..> ExecuteDeviceCommand
+
+DeviceControlApplicationService ..> CreateDeviceCommand
+DeviceControlApplicationService ..> LinkSensorCommand
+DeviceControlApplicationService ..> ExecuteDeviceCommand
+
+DeviceControlApplicationService ..> DeviceDto
+DeviceControlApplicationService ..> SensorDto
+DeviceControlApplicationService ..> ValveDto
+DeviceControlApplicationService ..> DeviceCommandDto
+DeviceControlApplicationService ..> DeviceControlSummaryDto
+
+DeviceDto --> SensorDto
+DeviceDto --> ValveDto
+DeviceDto --> DeviceCommandDto
+
+DeviceDto ..> Device
+SensorDto ..> Sensor
+ValveDto ..> Valve
+DeviceCommandDto ..> DeviceCommand
+DeviceControlSummaryDto ..> Device
+DeviceControlSummaryDto ..> Sensor
+DeviceControlSummaryDto ..> Valve
+DeviceControlSummaryDto ..> DeviceCommand
+
+EfDeviceRepository ..> Device
+EfSensorRepository ..> Sensor
+EfValveRepository ..> Valve
+EfDeviceCommandRepository ..> DeviceCommand
+
+' =========================
+' Monitoring command and dto usage
+' =========================
+
+ReadingController ..> CreateReadingCommand
+ReportController ..> CreateReportCommand
+
+MonitoringApplicationService ..> CreateReadingCommand
+MonitoringApplicationService ..> CreateReportCommand
+MonitoringApplicationService ..> MonitoringSummaryDto
+
+MonitoringSummaryDto ..> Reading
+MonitoringSummaryDto ..> Anomaly
+
+AnomalyDetectionService ..> Reading
+AnomalyDetectionService ..> Anomaly
+
+EfMonitoringSessionRepository ..> MonitoringSession
+EfReadingRepository ..> Reading
+EfAnomalyRepository ..> Anomaly
+EfReportRepository ..> Report
+
+' =========================
+' Notification command and dto usage
+' =========================
+
+AlertController ..> CreateAlertCommand
+ThresholdController ..> CreateThresholdCommand
+
+NotificationApplicationService ..> CreateAlertCommand
+NotificationApplicationService ..> CreateThresholdCommand
+NotificationApplicationService ..> NotificationSummaryDto
+
+NotificationSummaryDto ..> Alert
+NotificationSummaryDto ..> Threshold
+NotificationSummaryDto ..> Incident
+NotificationSummaryDto ..> NotificationChannel
+NotificationSummaryDto ..> AlertDelivery
+
+AlertPolicyService ..> Alert
+AlertPolicyService ..> Incident
+
+EfAlertRepository ..> Alert
+EfThresholdRepository ..> Threshold
+EfIncidentRepository ..> Incident
+EfNotificationChannelRepository ..> NotificationChannel
+EfAlertDeliveryRepository ..> AlertDelivery
+
+' =========================
+' Support command and dto usage
+' =========================
+
+SupportTicketController ..> CreateSupportTicketCommand
+SupportMessageController ..> SendSupportMessageCommand
+
+SupportApplicationService ..> CreateSupportTicketCommand
+SupportApplicationService ..> SendSupportMessageCommand
+SupportApplicationService ..> SupportSummaryDto
+
+SupportSummaryDto ..> SupportTicket
+SupportSummaryDto ..> SupportAgent
+SupportSummaryDto ..> KnowledgeArticle
+
+SupportPriorityService ..> SupportTicket
+SupportPriorityService ..> SupportAgent
+
+EfSupportTicketRepository ..> SupportTicket
+EfSupportMessageRepository ..> SupportMessage
+EfSupportAgentRepository ..> SupportAgent
+EfKnowledgeArticleRepository ..> KnowledgeArticle
+
+' =========================
+' DbContext explicit entity dependency
+' =========================
+
+LowCortisolDbContext ..> User
+LowCortisolDbContext ..> AccessProfile
+LowCortisolDbContext ..> Permission
+LowCortisolDbContext ..> AuthSession
+
+LowCortisolDbContext ..> Plan
+LowCortisolDbContext ..> PlanFeature
+LowCortisolDbContext ..> Subscription
+LowCortisolDbContext ..> Payment
+LowCortisolDbContext ..> ServiceRequest
+
+LowCortisolDbContext ..> Workplace
+LowCortisolDbContext ..> Site
+LowCortisolDbContext ..> SiteMember
+LowCortisolDbContext ..> SiteDeviceAssignment
+
+LowCortisolDbContext ..> Device
+LowCortisolDbContext ..> Sensor
+LowCortisolDbContext ..> Valve
+LowCortisolDbContext ..> DeviceCommand
+
+LowCortisolDbContext ..> MonitoringSession
+LowCortisolDbContext ..> Reading
+LowCortisolDbContext ..> Anomaly
+LowCortisolDbContext ..> Report
+
+LowCortisolDbContext ..> Alert
+LowCortisolDbContext ..> Threshold
+LowCortisolDbContext ..> Incident
+LowCortisolDbContext ..> NotificationChannel
+LowCortisolDbContext ..> AlertDelivery
+
+LowCortisolDbContext ..> SupportTicket
+LowCortisolDbContext ..> SupportMessage
+LowCortisolDbContext ..> SupportAgent
+LowCortisolDbContext ..> SupportConversation
+LowCortisolDbContext ..> KnowledgeArticle
+
+@enduml
+
+============================================================
+FILE: ./docs/database-diagram.puml
+============================================================
+@startuml
+title LowCortisol Platform - Database Diagram
+
+skinparam linetype ortho
+skinparam shadowing false
+skinparam packageStyle rectangle
+
+skinparam entity {
+  BackgroundColor #FFFFFF
+  BorderColor #1F2937
+  ArrowColor #1F2937
+}
+
+' ==========================================================
+' IAM
+' ==========================================================
+
+entity "user" as user {
+  * id : uuid <<PK>>
+  --
+  full_name : varchar
+  email : varchar <<unique>>
+  phone : varchar
+  password_hash : varchar
+  status : varchar
+  access_profile_id : uuid <<FK>>
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "access_profile" as access_profile {
+  * id : uuid <<PK>>
+  --
+  name : varchar
+  role : varchar
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "permission" as permission {
+  * id : uuid <<PK>>
+  --
+  code : varchar <<unique>>
+  description : varchar
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "access_profile_permission" as access_profile_permission {
+  * id : uuid <<PK>>
+  --
+  access_profile_id : uuid <<FK>>
+  permission_id : uuid <<FK>>
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "auth_session" as auth_session {
+  * id : uuid <<PK>>
+  --
+  user_id : uuid <<FK>>
+  token : varchar
+  refresh_token : varchar
+  is_active : boolean
+  expires_at : datetime
+  created_at : datetime
+  updated_at : datetime
+}
+
+' ==========================================================
+' PLANS
+' ==========================================================
+
+entity "plan" as plan {
+  * id : uuid <<PK>>
+  --
+  name : varchar
+  code : varchar <<unique>>
+  description : varchar
+  price : decimal
+  currency : varchar
+  billing_period : varchar
+  max_site : int
+  max_device : int
+  recommended : boolean
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "plan_feature" as plan_feature {
+  * id : uuid <<PK>>
+  --
+  plan_id : uuid <<FK>>
+  name : varchar
+  description : varchar
+  included : boolean
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "subscription" as subscription {
+  * id : uuid <<PK>>
+  --
+  user_id : uuid <<FK>>
+  workplace_id : uuid <<FK>>
+  plan_id : uuid <<FK>>
+  status : varchar
+  started_at : datetime
+  expires_at : datetime
+  auto_renew : boolean
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "payment" as payment {
+  * id : uuid <<PK>>
+  --
+  subscription_id : uuid <<FK>>
+  amount : decimal
+  currency : varchar
+  method : varchar
+  status : varchar
+  paid_at : datetime
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "service_request" as service_request {
+  * id : uuid <<PK>>
+  --
+  subscription_id : uuid <<FK>>
+  type : varchar
+  description : varchar
+  status : varchar
+  created_at : datetime
+  updated_at : datetime
+}
+
+' ==========================================================
+' WORKPLACE
+' ==========================================================
+
+entity "workplace" as workplace {
+  * id : uuid <<PK>>
+  --
+  owner_id : uuid <<FK>>
+  name : varchar
+  description : varchar
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "site" as site {
+  * id : uuid <<PK>>
+  --
+  workplace_id : uuid <<FK>>
+  name : varchar
+  address : varchar
+  type : varchar
+  status : varchar
+  water_consumption : decimal
+  gas_consumption : decimal
+  active_sensor : int
+  active_incident : int
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "site_member" as site_member {
+  * id : uuid <<PK>>
+  --
+  site_id : uuid <<FK>>
+  user_id : uuid <<FK>>
+  full_name : varchar
+  email : varchar
+  role : varchar
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "site_device_assignment" as site_device_assignment {
+  * id : uuid <<PK>>
+  --
+  site_id : uuid <<FK>>
+  device_id : uuid <<FK>>
+  device_name : varchar
+  device_type : varchar
+  status : varchar
+  created_at : datetime
+  updated_at : datetime
+}
+
+' ==========================================================
+' DEVICE CONTROL
+' ==========================================================
+
+entity "device" as device {
+  * id : uuid <<PK>>
+  --
+  site_id : uuid <<FK>>
+  name : varchar
+  type : varchar
+  status : varchar
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "sensor" as sensor {
+  * id : uuid <<PK>>
+  --
+  device_id : uuid <<FK>>
+  site_id : uuid <<FK>>
+  name : varchar
+  resource_type : varchar
+  current_value : decimal
+  unit : varchar
+  threshold : decimal
+  status : varchar
+  has_exceeded_threshold : boolean
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "valve" as valve {
+  * id : uuid <<PK>>
+  --
+  device_id : uuid <<FK>>
+  site_id : uuid <<FK>>
+  name : varchar
+  resource_type : varchar
+  status : varchar
+  opening_percentage : int
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "device_command" as device_command {
+  * id : uuid <<PK>>
+  --
+  device_id : uuid <<FK>>
+  command_type : varchar
+  status : varchar
+  created_at : datetime
+  updated_at : datetime
+}
+
+' ==========================================================
+' MONITORING
+' ==========================================================
+
+entity "monitoring_session" as monitoring_session {
+  * id : uuid <<PK>>
+  --
+  is_active : boolean
+  total_reading : int
+  total_anomaly : int
+  started_at : datetime
+  finished_at : datetime
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "reading" as reading {
+  * id : uuid <<PK>>
+  --
+  monitoring_session_id : uuid <<FK>>
+  sensor_id : uuid <<FK>>
+  site_id : uuid <<FK>>
+  resource_type : varchar
+  value : decimal
+  unit : varchar
+  status : varchar
+  measured_at : datetime
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "anomaly" as anomaly {
+  * id : uuid <<PK>>
+  --
+  reading_id : uuid <<FK>>
+  site_id : uuid <<FK>>
+  severity : varchar
+  description : varchar
+  status : varchar
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "report" as report {
+  * id : uuid <<PK>>
+  --
+  site_id : uuid <<FK>>
+  period : varchar
+  total_water : decimal
+  total_gas : decimal
+  anomaly_count : int
+  generated_at : datetime
+  created_at : datetime
+  updated_at : datetime
+}
+
+' ==========================================================
+' NOTIFICATIONS
+' ==========================================================
+
+entity "alert" as alert {
+  * id : uuid <<PK>>
+  --
+  site_id : uuid <<FK>>
+  sensor_id : uuid <<FK>>
+  resource_type : varchar
+  title : varchar
+  description : varchar
+  severity : varchar
+  status : varchar
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "threshold" as threshold {
+  * id : uuid <<PK>>
+  --
+  site_id : uuid <<FK>>
+  sensor_id : uuid <<FK>>
+  resource_type : varchar
+  warning_limit : decimal
+  critical_limit : decimal
+  unit : varchar
+  enabled : boolean
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "incident" as incident {
+  * id : uuid <<PK>>
+  --
+  alert_id : uuid <<FK>>
+  site_id : uuid <<FK>>
+  title : varchar
+  description : varchar
+  priority : varchar
+  status : varchar
+  assigned_to : uuid <<FK>>
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "notification_channel" as notification_channel {
+  * id : uuid <<PK>>
+  --
+  name : varchar
+  type : varchar
+  destination : varchar
+  enabled : boolean
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "alert_delivery" as alert_delivery {
+  * id : uuid <<PK>>
+  --
+  alert_id : uuid <<FK>>
+  channel_id : uuid <<FK>>
+  status : varchar
+  sent_at : datetime
+  created_at : datetime
+  updated_at : datetime
+}
+
+' ==========================================================
+' SUPPORT
+' ==========================================================
+
+entity "support_agent" as support_agent {
+  * id : uuid <<PK>>
+  --
+  full_name : varchar
+  email : varchar
+  specialty : varchar
+  status : varchar
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "support_ticket" as support_ticket {
+  * id : uuid <<PK>>
+  --
+  user_id : uuid <<FK>>
+  site_id : uuid <<FK>>
+  title : varchar
+  description : varchar
+  category : varchar
+  priority : varchar
+  status : varchar
+  assigned_agent_id : uuid <<FK>>
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "support_message" as support_message {
+  * id : uuid <<PK>>
+  --
+  ticket_id : uuid <<FK>>
+  sender_id : uuid
+  sender_type : varchar
+  content : varchar
+  status : varchar
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "support_conversation" as support_conversation {
+  * id : uuid <<PK>>
+  --
+  ticket_id : uuid <<FK>>
+  status : varchar
+  created_at : datetime
+  updated_at : datetime
+}
+
+entity "knowledge_article" as knowledge_article {
+  * id : uuid <<PK>>
+  --
+  title : varchar
+  summary : varchar
+  category : varchar
+  content : text
+  helpful_count : int
+  created_at : datetime
+  updated_at : datetime
+}
+
+' ==========================================================
+' RELATIONSHIPS
+' ==========================================================
+
+access_profile ||--o{ user : "access_profile_id"
+access_profile ||--o{ access_profile_permission : "access_profile_id"
+permission ||--o{ access_profile_permission : "permission_id"
+user ||--o{ auth_session : "user_id"
+
+user ||--o{ workplace : "owner_id"
+workplace ||--o{ site : "workplace_id"
+
+user ||--o{ subscription : "user_id"
+workplace ||--o{ subscription : "workplace_id"
+plan ||--o{ subscription : "plan_id"
+plan ||--o{ plan_feature : "plan_id"
+subscription ||--o{ payment : "subscription_id"
+subscription ||--o{ service_request : "subscription_id"
+
+site ||--o{ site_member : "site_id"
+user ||--o{ site_member : "user_id"
+
+site ||--o{ device : "site_id"
+site ||--o{ site_device_assignment : "site_id"
+device ||--o{ site_device_assignment : "device_id"
+
+device ||--o{ sensor : "device_id"
+device ||--o{ valve : "device_id"
+device ||--o{ device_command : "device_id"
+
+site ||--o{ sensor : "site_id"
+site ||--o{ valve : "site_id"
+
+monitoring_session ||--o{ reading : "monitoring_session_id"
+sensor ||--o{ reading : "sensor_id"
+site ||--o{ reading : "site_id"
+
+reading ||--o| anomaly : "reading_id"
+site ||--o{ anomaly : "site_id"
+site ||--o{ report : "site_id"
+
+site ||--o{ alert : "site_id"
+sensor ||--o{ alert : "sensor_id"
+
+site ||--o{ threshold : "site_id"
+sensor ||--o{ threshold : "sensor_id"
+
+alert ||--o{ incident : "alert_id"
+site ||--o{ incident : "site_id"
+user ||--o{ incident : "assigned_to"
+
+alert ||--o{ alert_delivery : "alert_id"
+notification_channel ||--o{ alert_delivery : "channel_id"
+
+user ||--o{ support_ticket : "user_id"
+site ||--o{ support_ticket : "site_id"
+support_agent ||--o{ support_ticket : "assigned_agent_id"
+
+support_ticket ||--o{ support_message : "ticket_id"
+support_ticket ||--o| support_conversation : "ticket_id"
+
+@enduml
+
+============================================================
+FILE: ./docs/frontend-class-diagram.puml
+============================================================
+@startuml
+title LowCortisol Webapp - Frontend Class Diagram
+
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam packageStyle rectangle
+
+' =========================
+' SHARED CONTEXT
+' =========================
+package "Shared" {
+
+  class AppRoute {
+    +path: string
+    +name: string
+    +component: Component
+    +meta: object
+  }
+
+  class ApiClientService {
+    +baseUrl: string
+    +get(endpoint: string, params?: object): Promise
+    +post(endpoint: string, payload: object): Promise
+    +patch(endpoint: string, payload: object): Promise
+    +delete(endpoint: string): Promise
+  }
+
+  class AuthSessionService {
+    +getCurrentUser(): User
+    +getCurrentUserId(): string
+    +saveSession(session: AuthSession): void
+    +clearSession(): void
+    +hasSession(): boolean
+  }
+
+  class TranslationService {
+    +currentLanguage: string
+    +loadLanguage(language: string): Promise
+    +t(key: string): string
+    +setLanguage(language: string): void
+  }
+
+  class SubscriptionAccessService {
+    +hasActiveSubscription(userId: string): Promise<boolean>
+    +canAccessProtectedRoute(userId: string): Promise<boolean>
+  }
+
+  class UiCardComponent {
+    +title: string
+    +render(): void
+  }
+
+  class LanguageSwitcherComponent {
+    +selectedLanguage: string
+    +changeLanguage(language: string): void
+  }
+
+  class AppLayoutComponent {
+    +showNavigation: boolean
+    +render(): void
+  }
+
+  class RouteGuard {
+    +beforeEach(to: AppRoute): boolean
+    +requiresAuth(route: AppRoute): boolean
+    +requiresSubscription(route: AppRoute): boolean
+  }
+}
+
+' =========================
+' IAM CONTEXT
+' =========================
+package "IAM" {
+
+  class User {
+    +id: string
+    +fullName: string
+    +email: string
+    +phone: string
+    +password: string
+    +status: string
+    +accessProfileId: string
+  }
+
+  class AccessProfile {
+    +id: string
+    +name: string
+    +role: string
+    +permissions: string[]
+  }
+
+  class AuthSession {
+    +id: string
+    +userId: string
+    +token: string
+    +status: string
+    +createdAt: string
+  }
+
+  class IamStore {
+    +state: object
+    +signIn(email: string, password: string): Promise
+    +signUp(payload: object): Promise
+    +recoverPassword(email: string): Promise
+    +updateProfile(payload: object): Promise
+    +signOut(): void
+    +restoreSession(): void
+  }
+
+  class IamFacade {
+    -iamApiService: IamApiService
+    +signIn(email: string, password: string): Promise
+    +signUp(payload: object): Promise
+    +recoverPassword(email: string): Promise
+    +getProfile(userId: string): Promise
+    +updateProfile(userId: string, payload: object): Promise
+    +signOut(): void
+  }
+
+  class IamApiService {
+    +getUser(): Promise<User[]>
+    +getUserByEmail(email: string): Promise<User>
+    +createUser(payload: object): Promise<User>
+    +updateUser(userId: string, payload: object): Promise<User>
+    +getAccessProfile(profileId: string): Promise<AccessProfile>
+    +createSession(payload: object): Promise<AuthSession>
+    +getSession(userId: string): Promise<AuthSession>
+    +closeSession(sessionId: string): Promise
+  }
+
+  class LoginPageComponent {
+    +email: string
+    +password: string
+    +submit(): Promise
+  }
+
+  class RegisterPageComponent {
+    +fullName: string
+    +email: string
+    +phone: string
+    +password: string
+    +submit(): Promise
+  }
+
+  class RecoverPageComponent {
+    +email: string
+    +submit(): Promise
+  }
+
+  class ProfilePageComponent {
+    +user: User
+    +accessProfile: AccessProfile
+    +session: AuthSession
+    +updateProfile(): Promise
+    +signOut(): void
+  }
+}
+
+' =========================
+' MONITORING CONTEXT
+' =========================
+package "Monitoring" {
+
+  class MonitoringSession {
+    +id: string
+    +siteId: string
+    +status: string
+    +startedAt: string
+    +finishedAt: string
+  }
+
+  class Reading {
+    +id: string
+    +sensorId: string
+    +siteId: string
+    +resourceType: string
+    +value: number
+    +unit: string
+    +createdAt: string
+  }
+
+  class Anomaly {
+    +id: string
+    +readingId: string
+    +type: string
+    +severity: string
+    +description: string
+    +createdAt: string
+  }
+
+  class Report {
+    +id: string
+    +siteId: string
+    +title: string
+    +period: string
+    +totalWater: number
+    +totalGas: number
+    +createdAt: string
+  }
+
+  class MonitoringStore {
+    +state: object
+    +loadDashboard(): Promise
+    +simulateReading(): Promise
+    +loadReport(): Promise
+    +generateReport(): Promise
+  }
+
+  class MonitoringFacade {
+    -monitoringApiService: MonitoringApiService
+    +getDashboard(): Promise
+    +getReading(): Promise
+    +getAnomaly(): Promise
+    +getReport(): Promise
+    +createReading(payload: object): Promise
+    +createReport(payload: object): Promise
+  }
+
+  class MonitoringApiService {
+    +getSession(): Promise<MonitoringSession[]>
+    +getReading(): Promise<Reading[]>
+    +getAnomaly(): Promise<Anomaly[]>
+    +getReport(): Promise<Report[]>
+    +createReading(payload: object): Promise<Reading>
+    +createReport(payload: object): Promise<Report>
+    +getSummary(): Promise<object>
+  }
+
+  class DashboardPageComponent {
+    +loadDashboard(): Promise
+    +simulateReading(): Promise
+  }
+
+  class ReportPageComponent {
+    +loadReport(): Promise
+    +generateReport(): Promise
+  }
+}
+
+' =========================
+' WORKSPACE CONTEXT
+' =========================
+package "Workspace" {
+
+  class Workspace {
+    +id: string
+    +ownerId: string
+    +name: string
+    +status: string
+  }
+
+  class Site {
+    +id: string
+    +workspaceId: string
+    +name: string
+    +type: string
+    +location: string
+    +status: string
+  }
+
+  class SiteMember {
+    +id: string
+    +siteId: string
+    +userId: string
+    +role: string
+  }
+
+  class SiteDeviceAssignment {
+    +id: string
+    +siteId: string
+    +deviceId: string
+    +assignedAt: string
+  }
+
+  class WorkspaceStore {
+    +state: object
+    +loadWorkspace(): Promise
+    +loadSite(type: string): Promise
+    +selectSite(siteId: string): void
+    +createSite(payload: object): Promise
+    +assignMember(payload: object): Promise
+    +assignDevice(payload: object): Promise
+  }
+
+  class WorkspaceFacade {
+    -workspaceApiService: WorkspaceApiService
+    +getWorkspace(): Promise
+    +getSite(type: string): Promise
+    +getSiteById(siteId: string): Promise
+    +createSite(payload: object): Promise
+    +assignMemberToSite(payload: object): Promise
+    +assignDeviceToSite(payload: object): Promise
+    +getSummary(): Promise
+  }
+
+  class WorkspaceApiService {
+    +getWorkspace(): Promise<Workspace>
+    +getSite(type: string): Promise<Site[]>
+    +getSiteById(siteId: string): Promise<Site>
+    +createSite(payload: object): Promise<Site>
+    +assignMemberToSite(payload: object): Promise<SiteMember>
+    +assignDeviceToSite(payload: object): Promise<SiteDeviceAssignment>
+    +getSummary(): Promise<object>
+  }
+
+  class SitePageComponent {
+    +selectedSite: Site
+    +filterType: string
+    +loadSite(): Promise
+    +selectSite(siteId: string): void
+    +createSite(): Promise
+    +assignMember(): Promise
+    +assignDevice(): Promise
+  }
+}
+
+' =========================
+' DEVICE CONTROL CONTEXT
+' =========================
+package "Device Control" {
+
+  class Device {
+    +id: string
+    +siteId: string
+    +name: string
+    +type: string
+    +status: string
+    +isOnline: boolean
+  }
+
+  class Sensor {
+    +id: string
+    +deviceId: string
+    +siteId: string
+    +name: string
+    +resourceType: string
+    +currentValue: number
+    +unit: string
+    +threshold: number
+    +status: string
+    +hasExceededThreshold: boolean
+  }
+
+  class Valve {
+    +id: string
+    +deviceId: string
+    +name: string
+    +resourceType: string
+    +status: string
+    +openingPercentage: number
+    +isOpen: boolean
+  }
+
+  class DeviceCommand {
+    +id: string
+    +deviceId: string
+    +commandType: string
+    +status: string
+    +createdAt: string
+  }
+
+  class DeviceControlStore {
+    +state: object
+    +loadDevice(): Promise
+    +selectDevice(deviceId: string): void
+    +createDevice(payload: object): Promise
+    +linkSensor(payload: object): Promise
+    +openValve(valveId: string): Promise
+    +closeValve(valveId: string): Promise
+    +executeSyncCommand(deviceId: string): Promise
+  }
+
+  class DeviceControlFacade {
+    -deviceControlApiService: DeviceControlApiService
+    +getDevice(): Promise
+    +getSensor(): Promise
+    +getValve(): Promise
+    +getCommand(): Promise
+    +createDevice(payload: object): Promise
+    +linkSensor(payload: object): Promise
+    +openValve(valveId: string): Promise
+    +closeValve(valveId: string): Promise
+    +executeSyncCommand(deviceId: string): Promise
+  }
+
+  class DeviceControlApiService {
+    +getDevice(): Promise<Device[]>
+    +getRawDevice(): Promise<Device[]>
+    +getSensor(): Promise<Sensor[]>
+    +getValve(): Promise<Valve[]>
+    +getCommand(): Promise<DeviceCommand[]>
+    +createDevice(payload: object): Promise<Device>
+    +linkSensor(payload: object): Promise<Sensor>
+    +openValve(valveId: string): Promise<Valve>
+    +closeValve(valveId: string): Promise<Valve>
+    +executeSyncCommand(deviceId: string): Promise<DeviceCommand>
+    +getSummary(): Promise<object>
+  }
+
+  class DevicePageComponent {
+    +selectedDevice: Device
+    +loadDevice(): Promise
+    +selectDevice(deviceId: string): void
+    +createDevice(): Promise
+    +linkSensor(): Promise
+    +openValve(valveId: string): Promise
+    +closeValve(valveId: string): Promise
+    +syncDevice(): Promise
+  }
+}
+
+' =========================
+' NOTIFICATION CONTEXT
+' =========================
+package "Notification" {
+
+  class Alert {
+    +id: string
+    +siteId: string
+    +sensorId: string
+    +resourceType: string
+    +title: string
+    +description: string
+    +severity: string
+    +status: string
+    +createdAt: string
+  }
+
+  class Threshold {
+    +id: string
+    +siteId: string
+    +sensorId: string
+    +resourceType: string
+    +warningLimit: number
+    +criticalLimit: number
+    +unit: string
+    +enabled: boolean
+  }
+
+  class Incident {
+    +id: string
+    +alertId: string
+    +siteId: string
+    +title: string
+    +description: string
+    +priority: string
+    +status: string
+  }
+
+  class NotificationChannel {
+    +id: string
+    +userId: string
+    +type: string
+    +target: string
+    +enabled: boolean
+  }
+
+  class AlertDelivery {
+    +id: string
+    +alertId: string
+    +channelId: string
+    +status: string
+    +sentAt: string
+  }
+
+  class NotificationStore {
+    +state: object
+    +loadNotification(): Promise
+    +createAlert(payload: object): Promise
+    +resolveAlert(alertId: string): Promise
+    +closeAlert(alertId: string): Promise
+    +createThreshold(payload: object): Promise
+    +sendAlert(alertId: string): Promise
+  }
+
+  class NotificationFacade {
+    -notificationApiService: NotificationApiService
+    +getAlert(): Promise
+    +getThreshold(): Promise
+    +getIncident(): Promise
+    +getChannel(): Promise
+    +getDelivery(): Promise
+    +createAlert(payload: object): Promise
+    +createThreshold(payload: object): Promise
+    +resolveAlert(alertId: string): Promise
+    +closeAlert(alertId: string): Promise
+    +sendAlert(alertId: string): Promise
+  }
+
+  class NotificationApiService {
+    +getAlert(): Promise<Alert[]>
+    +getThreshold(): Promise<Threshold[]>
+    +getIncident(): Promise<Incident[]>
+    +getChannel(): Promise<NotificationChannel[]>
+    +getDelivery(): Promise<AlertDelivery[]>
+    +createAlert(payload: object): Promise<Alert>
+    +createThreshold(payload: object): Promise<Threshold>
+    +resolveAlert(alertId: string): Promise<Alert>
+    +closeAlert(alertId: string): Promise<Alert>
+    +sendAlert(alertId: string): Promise<AlertDelivery[]>
+    +getSummary(): Promise<object>
+  }
+
+  class AlertPageComponent {
+    +loadNotification(): Promise
+    +createAlert(): Promise
+    +resolveAlert(alertId: string): Promise
+    +closeAlert(alertId: string): Promise
+    +createThreshold(): Promise
+    +sendAlert(alertId: string): Promise
+  }
+}
+
+' =========================
+' PLAN CONTEXT
+' =========================
+package "Plan" {
+
+  class Plan {
+    +id: string
+    +name: string
+    +price: number
+    +billingPeriod: string
+    +siteLimit: number
+    +deviceLimit: number
+    +recommended: boolean
+  }
+
+  class PlanFeature {
+    +id: string
+    +planId: string
+    +name: string
+    +enabled: boolean
+  }
+
+  class Subscription {
+    +id: string
+    +userId: string
+    +planId: string
+    +status: string
+    +startedAt: string
+    +cancelledAt: string
+  }
+
+  class Payment {
+    +id: string
+    +subscriptionId: string
+    +amount: number
+    +method: string
+    +status: string
+    +paidAt: string
+  }
+
+  class ServiceRequest {
+    +id: string
+    +subscriptionId: string
+    +type: string
+    +status: string
+    +createdAt: string
+  }
+
+  class PlanStore {
+    +state: object
+    +loadPlan(): Promise
+    +selectPlan(planId: string): void
+    +buyPlan(payload: object): Promise
+    +cancelSubscription(): Promise
+    +loadPayment(): Promise
+    +loadServiceRequest(): Promise
+  }
+
+  class PlanFacade {
+    -planApiService: PlanApiService
+    +getPlan(): Promise
+    +getPlanFeature(): Promise
+    +getSubscription(): Promise
+    +getPayment(): Promise
+    +getServiceRequest(): Promise
+    +buyPlan(payload: object): Promise
+    +cancelSubscription(subscriptionId: string): Promise
+    +getSummary(): Promise
+  }
+
+  class PlanApiService {
+    +getPlan(): Promise<Plan[]>
+    +getPlanFeature(): Promise<PlanFeature[]>
+    +getSubscription(): Promise<Subscription>
+    +getPayment(): Promise<Payment[]>
+    +getServiceRequest(): Promise<ServiceRequest[]>
+    +buyPlan(payload: object): Promise<Subscription>
+    +cancelSubscription(subscriptionId: string): Promise<Subscription>
+    +getSummary(): Promise<object>
+  }
+
+  class PlanPageComponent {
+    +selectedPlan: Plan
+    +showPaymentForm: boolean
+    +loadPlan(): Promise
+    +openPaymentForm(planId: string): void
+    +confirmPurchase(): Promise
+    +cancelSubscription(): Promise
+  }
+
+  class PaymentFormComponent {
+    +cardholderName: string
+    +cardNumber: string
+    +expirationDate: string
+    +cvv: string
+    +formatCardNumber(): void
+    +formatExpirationDate(): void
+    +validatePaymentForm(): boolean
+    +submit(): Promise
+  }
+}
+
+' =========================
+' SUPPORT CONTEXT
+' =========================
+package "Support" {
+
+  class SupportTicket {
+    +id: string
+    +userId: string
+    +siteId: string
+    +title: string
+    +description: string
+    +category: string
+    +priority: string
+    +status: string
+  }
+
+  class SupportMessage {
+    +id: string
+    +ticketId: string
+    +senderType: string
+    +message: string
+    +createdAt: string
+  }
+
+  class SupportAgent {
+    +id: string
+    +fullName: string
+    +email: string
+    +status: string
+  }
+
+  class SupportConversation {
+    +id: string
+    +ticketId: string
+    +status: string
+  }
+
+  class KnowledgeArticle {
+    +id: string
+    +title: string
+    +category: string
+    +content: string
+    +usefulCount: number
+  }
+
+  class SupportStore {
+    +state: object
+    +loadSupport(): Promise
+    +selectTicket(ticketId: string): void
+    +createTicket(payload: object): Promise
+    +sendMessage(payload: object): Promise
+    +resolveTicket(ticketId: string): Promise
+    +closeTicket(ticketId: string): Promise
+  }
+
+  class SupportFacade {
+    -supportApiService: SupportApiService
+    +getTicket(): Promise
+    +getMessage(ticketId: string): Promise
+    +getAgent(): Promise
+    +getConversation(): Promise
+    +getKnowledgeArticle(): Promise
+    +createTicket(payload: object): Promise
+    +sendMessage(payload: object): Promise
+    +resolveTicket(ticketId: string): Promise
+    +closeTicket(ticketId: string): Promise
+  }
+
+  class SupportApiService {
+    +getTicket(): Promise<SupportTicket[]>
+    +getMessage(ticketId: string): Promise<SupportMessage[]>
+    +getAgent(): Promise<SupportAgent[]>
+    +getConversation(): Promise<SupportConversation[]>
+    +getKnowledgeArticle(): Promise<KnowledgeArticle[]>
+    +createTicket(payload: object): Promise<SupportTicket>
+    +sendMessage(payload: object): Promise<SupportMessage>
+    +resolveTicket(ticketId: string): Promise<SupportTicket>
+    +closeTicket(ticketId: string): Promise<SupportTicket>
+    +getSummary(): Promise<object>
+  }
+
+  class SupportPageComponent {
+    +selectedTicket: SupportTicket
+    +message: string
+    +loadSupport(): Promise
+    +selectTicket(ticketId: string): void
+    +createTicket(): Promise
+    +sendMessage(): Promise
+    +resolveTicket(ticketId: string): Promise
+    +closeTicket(ticketId: string): Promise
+  }
+}
+
+' =========================
+' RELATIONSHIPS - SHARED
+' =========================
+AppLayoutComponent --> LanguageSwitcherComponent
+AppLayoutComponent --> UiCardComponent
+RouteGuard --> AuthSessionService
+RouteGuard --> SubscriptionAccessService
+TranslationService --> LanguageSwitcherComponent
+
+ApiClientService <.. IamApiService
+ApiClientService <.. MonitoringApiService
+ApiClientService <.. WorkspaceApiService
+ApiClientService <.. DeviceControlApiService
+ApiClientService <.. NotificationApiService
+ApiClientService <.. PlanApiService
+ApiClientService <.. SupportApiService
+
+' =========================
+' RELATIONSHIPS - IAM
+' =========================
+LoginPageComponent --> IamStore
+RegisterPageComponent --> IamStore
+RecoverPageComponent --> IamStore
+ProfilePageComponent --> IamStore
+
+IamStore --> IamFacade
+IamFacade --> IamApiService
+IamApiService --> User
+IamApiService --> AccessProfile
+IamApiService --> AuthSession
+
+User --> AccessProfile
+AuthSession --> User
+IamStore --> AuthSessionService
+
+' =========================
+' RELATIONSHIPS - MONITORING
+' =========================
+DashboardPageComponent --> MonitoringStore
+ReportPageComponent --> MonitoringStore
+
+MonitoringStore --> MonitoringFacade
+MonitoringFacade --> MonitoringApiService
+MonitoringApiService --> MonitoringSession
+MonitoringApiService --> Reading
+MonitoringApiService --> Anomaly
+MonitoringApiService --> Report
+
+MonitoringSession --> Reading
+Reading --> Anomaly
+Report --> Reading
+
+' =========================
+' RELATIONSHIPS - WORKSPACE
+' =========================
+SitePageComponent --> WorkspaceStore
+WorkspaceStore --> WorkspaceFacade
+WorkspaceFacade --> WorkspaceApiService
+WorkspaceApiService --> Workspace
+WorkspaceApiService --> Site
+WorkspaceApiService --> SiteMember
+WorkspaceApiService --> SiteDeviceAssignment
+
+Workspace --> Site
+Site --> SiteMember
+Site --> SiteDeviceAssignment
+SiteMember --> User
+SiteDeviceAssignment --> Device
+
+' =========================
+' RELATIONSHIPS - DEVICE CONTROL
+' =========================
+DevicePageComponent --> DeviceControlStore
+DeviceControlStore --> DeviceControlFacade
+DeviceControlFacade --> DeviceControlApiService
+
+DeviceControlApiService --> Device
+DeviceControlApiService --> Sensor
+DeviceControlApiService --> Valve
+DeviceControlApiService --> DeviceCommand
+
+Device --> Sensor
+Device --> Valve
+Device --> DeviceCommand
+Sensor --> Site
+Valve --> Device
+
+' =========================
+' RELATIONSHIPS - NOTIFICATION
+' =========================
+AlertPageComponent --> NotificationStore
+NotificationStore --> NotificationFacade
+NotificationFacade --> NotificationApiService
+
+NotificationApiService --> Alert
+NotificationApiService --> Threshold
+NotificationApiService --> Incident
+NotificationApiService --> NotificationChannel
+NotificationApiService --> AlertDelivery
+
+Alert --> Incident
+Alert --> AlertDelivery
+Threshold --> Sensor
+AlertDelivery --> NotificationChannel
+
+' =========================
+' RELATIONSHIPS - PLAN
+' =========================
+PlanPageComponent --> PlanStore
+PlanPageComponent --> PaymentFormComponent
+PlanStore --> PlanFacade
+PlanFacade --> PlanApiService
+
+PlanApiService --> Plan
+PlanApiService --> PlanFeature
+PlanApiService --> Subscription
+PlanApiService --> Payment
+PlanApiService --> ServiceRequest
+
+Plan --> PlanFeature
+Subscription --> Plan
+Subscription --> User
+Subscription --> Payment
+Subscription --> ServiceRequest
+
+' =========================
+' RELATIONSHIPS - SUPPORT
+' =========================
+SupportPageComponent --> SupportStore
+SupportStore --> SupportFacade
+SupportFacade --> SupportApiService
+
+SupportApiService --> SupportTicket
+SupportApiService --> SupportMessage
+SupportApiService --> SupportAgent
+SupportApiService --> SupportConversation
+SupportApiService --> KnowledgeArticle
+
+SupportTicket --> SupportMessage
+SupportTicket --> SupportConversation
+SupportTicket --> SupportAgent
+SupportTicket --> User
+SupportConversation --> SupportMessage
+
+' =========================
+' CROSS-CONTEXT DEPENDENCIES
+' =========================
+MonitoringStore ..> SubscriptionAccessService : validates access
+WorkspaceStore ..> SubscriptionAccessService : validates plan limits
+DeviceControlStore ..> SubscriptionAccessService : validates access
+NotificationStore ..> SubscriptionAccessService : validates access
+ReportPageComponent ..> Reading : uses monitored data
+Alert ..> Reading : created from anomaly/threshold
+SupportTicket ..> Device : may reference issue
+SupportTicket ..> Alert : may reference incident
+PaymentFormComponent ..> Payment : creates payment data
+
+@enduml
+
+============================================================
 FILE: ./ejemplo.puml
 ============================================================
 @startuml
@@ -3242,11 +6563,14 @@ FILE: ./public/assets/i18n/en.json
       "cancelled": "Cancelled",
       "suspended": "Suspended",
       "expired": "Expired",
-      "unknown": "Unknown status",
+      "unknown": "No status",
       "paid": "Paid",
       "pending": "Pending",
       "failed": "Failed",
-      "refunded": "Refunded"
+      "refunded": "Refunded",
+      "open": "Open",
+      "resolved": "Resolved",
+      "closed": "Closed"
     },
     "requests": {
       "changePlan": "Plan change",
@@ -3669,6 +6993,7 @@ FILE: ./public/assets/i18n/es.json
       "noActiveSubscription": "Aún no tienes una suscripción activa. Compra un plan para desbloquear el acceso a la plataforma.",
       "serviceRequest": "Solicitudes de servicio",
       "noRequest": "No hay solicitudes registradas."
+
     },
     "status": {
       "active": "Activa",
@@ -3679,7 +7004,10 @@ FILE: ./public/assets/i18n/es.json
       "paid": "Pagado",
       "pending": "Pendiente",
       "failed": "Fallido",
-      "refunded": "Reembolsado"
+      "refunded": "Reembolsado",
+      "open": "Abierta",
+      "resolved": "Resuelta",
+      "closed": "Cerrada"
     },
     "requests": {
       "changePlan": "Cambio de plan",
@@ -4112,7 +7440,10 @@ FILE: ./public/assets/i18n/pt.json
       "paid": "Pago",
       "pending": "Pendente",
       "failed": "Falhou",
-      "refunded": "Reembolsado"
+      "refunded": "Reembolsado",
+      "open": "Aberta",
+      "resolved": "Resolvida",
+      "closed": "Fechada"
     },
     "requests": {
       "changePlan": "Mudança de plano",
@@ -7776,6 +11107,8 @@ const form = reactive({
 onMounted(() => {
   const planId = route.query.plan;
   const planCode = route.query.code;
+  const checkout = route.query.checkout;
+  const paymentMethod = route.query.paymentMethod;
 
   if (planId) {
     localStorage.setItem("lowcortisol.pendingPlanId", String(planId));
@@ -7785,19 +11118,29 @@ onMounted(() => {
     localStorage.setItem("lowcortisol.pendingPlanCode", String(planCode));
   }
 
-  console.log("Selected plan from landing:", {
-    planId,
-    planCode,
-  });
+  if (checkout) {
+    localStorage.setItem("lowcortisol.pendingCheckout", String(checkout));
+  }
+
+  if (paymentMethod) {
+    localStorage.setItem("lowcortisol.pendingPaymentMethod", String(paymentMethod));
+  }
 });
 
 async function handleSubmit() {
   await signUp(form);
 
   const pendingPlanId = localStorage.getItem("lowcortisol.pendingPlanId");
+  const pendingCheckout = localStorage.getItem("lowcortisol.pendingCheckout");
 
-  if (pendingPlanId) {
-    await router.push({ name: "plans" });
+  if (pendingPlanId && pendingCheckout === "paid") {
+    await router.push({
+      name: "plans",
+      query: {
+        plan: pendingPlanId,
+        checkout: pendingCheckout,
+      },
+    });
     return;
   }
 
@@ -12460,6 +15803,473 @@ export class SubscriptionsResponse extends BaseResponse {
 }
 
 ============================================================
+FILE: ./src/app/plan/presentation/components/checkout-form/checkout-form.component.vue
+============================================================
+<template>
+  <Teleport to="body">
+    <div
+        class="checkout-backdrop"
+        @click.self="emit('close')"
+    >
+      <section class="checkout-modal">
+        <button
+            class="modal-close"
+            type="button"
+            aria-label="Close"
+            @click="emit('close')"
+        >
+          ×
+        </button>
+
+        <div class="checkout-header">
+          <div>
+            <span class="checkout-badge">
+              {{ t("plans.page.checkoutTitle") }}
+            </span>
+
+            <h2>
+              {{ t("plans.page.selectedPlan") }}
+            </h2>
+
+            <p class="checkout-subtitle">
+              {{ t("plans.page.checkoutSubtitle") }}
+            </p>
+          </div>
+
+          <div class="selected-plan-card">
+            <span>{{ plan.name }}</span>
+            <strong>S/ {{ Number(plan.price || 0).toFixed(2) }}</strong>
+            <small>{{ t("plans.page.monthly") }}</small>
+          </div>
+        </div>
+
+        <form
+            class="checkout-form"
+            @submit.prevent="handleSubmit"
+        >
+          <label class="form-field">
+            <span>{{ t("plans.page.cardholderName") }}</span>
+            <input
+                v-model="checkout.cardholderName"
+                type="text"
+                autocomplete="cc-name"
+                required
+                placeholder="Jean Loa"
+            />
+          </label>
+
+          <label class="form-field">
+            <span>{{ t("plans.page.cardNumber") }}</span>
+            <input
+                v-model="checkout.cardNumber"
+                type="text"
+                inputmode="numeric"
+                autocomplete="cc-number"
+                maxlength="19"
+                required
+                placeholder="4242 4242 4242 4242"
+                @input="handleCardNumberInput"
+            />
+          </label>
+
+          <div class="checkout-row">
+            <label class="form-field">
+              <span>{{ t("plans.page.expirationDate") }}</span>
+              <input
+                  v-model="checkout.expirationDate"
+                  type="text"
+                  inputmode="numeric"
+                  autocomplete="cc-exp"
+                  maxlength="5"
+                  required
+                  placeholder="MM/YY"
+                  @input="handleExpirationDateInput"
+              />
+            </label>
+
+            <label class="form-field">
+              <span>{{ t("plans.page.securityCode") }}</span>
+              <input
+                  v-model="checkout.securityCode"
+                  type="text"
+                  inputmode="numeric"
+                  autocomplete="cc-csc"
+                  maxlength="3"
+                  required
+                  placeholder="123"
+                  @input="handleSecurityCodeInput"
+              />
+            </label>
+          </div>
+
+          <div class="checkout-actions">
+            <button
+                class="btn-secondary"
+                type="button"
+                @click="emit('close')"
+            >
+              {{ t("plans.page.closeForm") }}
+            </button>
+
+            <button
+                class="btn-primary"
+                type="submit"
+            >
+              {{ t("plans.page.confirmPurchase") }}
+            </button>
+          </div>
+        </form>
+      </section>
+    </div>
+  </Teleport>
+</template>
+
+<script setup>
+import { onBeforeUnmount, onMounted, reactive } from "vue";
+
+import { useTranslation } from "../../../../../../shared/application/services/translation.service";
+
+defineProps({
+  plan: {
+    type: Object,
+    required: true,
+  },
+});
+
+const emit = defineEmits(["submit", "close"]);
+
+const { t } = useTranslation();
+
+const checkout = reactive({
+  cardholderName: "",
+  cardNumber: "",
+  expirationDate: "",
+  securityCode: "",
+});
+
+onMounted(() => {
+  document.body.classList.add("modal-open");
+  window.addEventListener("keydown", handleEscape);
+});
+
+onBeforeUnmount(() => {
+  document.body.classList.remove("modal-open");
+  window.removeEventListener("keydown", handleEscape);
+});
+
+function handleEscape(event) {
+  if (event.key === "Escape") {
+    emit("close");
+  }
+}
+
+function onlyNumbers(value) {
+  return String(value || "").replace(/\D/g, "");
+}
+
+function formatCardNumber(value) {
+  return onlyNumbers(value)
+      .slice(0, 16)
+      .replace(/(.{4})/g, "$1 ")
+      .trim();
+}
+
+function formatExpirationDate(value) {
+  const numbers = onlyNumbers(value).slice(0, 4);
+
+  if (numbers.length === 0) {
+    return "";
+  }
+
+  if (numbers.length === 1) {
+    const firstDigit = Number(numbers);
+
+    if (firstDigit > 1) {
+      return `0${firstDigit}`;
+    }
+
+    return numbers;
+  }
+
+  let month = numbers.slice(0, 2);
+  let monthNumber = Number(month);
+
+  if (monthNumber < 1) {
+    month = "01";
+  }
+
+  if (monthNumber > 12) {
+    month = "12";
+  }
+
+  if (numbers.length <= 2) {
+    return month;
+  }
+
+  const yearInput = numbers.slice(2);
+  const currentYearShort = new Date().getFullYear() % 100;
+
+  if (yearInput.length === 1) {
+    return `${month}/${yearInput}`;
+  }
+
+  let yearNumber = Number(yearInput);
+
+  if (yearNumber < currentYearShort) {
+    yearNumber = currentYearShort;
+  }
+
+  const year = String(yearNumber).padStart(2, "0");
+
+  return `${month}/${year}`;
+}
+
+function formatSecurityCode(value) {
+  return onlyNumbers(value).slice(0, 3);
+}
+
+function handleCardNumberInput(event) {
+  checkout.cardNumber = formatCardNumber(event.target.value);
+  event.target.value = checkout.cardNumber;
+}
+
+function handleExpirationDateInput(event) {
+  checkout.expirationDate = formatExpirationDate(event.target.value);
+  event.target.value = checkout.expirationDate;
+}
+
+function handleSecurityCodeInput(event) {
+  checkout.securityCode = formatSecurityCode(event.target.value);
+  event.target.value = checkout.securityCode;
+}
+
+function handleSubmit() {
+  emit("submit", {
+    cardholderName: checkout.cardholderName,
+    cardNumber: checkout.cardNumber,
+    expirationDate: checkout.expirationDate,
+    securityCode: checkout.securityCode,
+  });
+}
+</script>
+
+<style scoped>
+.checkout-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.72);
+  backdrop-filter: blur(8px);
+  animation: fade-in 0.2s ease;
+}
+
+.checkout-modal {
+  position: relative;
+  width: min(100%, 720px);
+  max-height: min(92vh, 820px);
+  overflow-y: auto;
+  border-radius: 28px;
+  background:
+      radial-gradient(circle at top left, rgba(47, 128, 237, 0.18), transparent 36%),
+      var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 30px 90px rgba(15, 23, 42, 0.35);
+  padding: 34px;
+  animation: modal-pop 0.24s ease;
+}
+
+.modal-close {
+  position: absolute;
+  top: 18px;
+  right: 20px;
+  width: 42px;
+  height: 42px;
+  border: none;
+  border-radius: 999px;
+  background: var(--color-surface-soft);
+  color: var(--color-text);
+  font-size: 30px;
+  line-height: 1;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.modal-close:hover {
+  transform: scale(1.05);
+}
+
+.checkout-header {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 24px;
+  align-items: start;
+  margin-bottom: 28px;
+  padding-right: 44px;
+}
+
+.checkout-badge {
+  display: inline-flex;
+  width: fit-content;
+  margin-bottom: 14px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: #eaf4ff;
+  color: var(--color-primary);
+  border: 1px solid #bfdbfe;
+  font-weight: 900;
+  font-size: 0.85rem;
+}
+
+.checkout-header h2 {
+  margin: 0 0 10px;
+  font-size: clamp(1.8rem, 4vw, 2.4rem);
+}
+
+.checkout-subtitle {
+  color: var(--color-text-muted);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.selected-plan-card {
+  min-width: 190px;
+  display: grid;
+  gap: 6px;
+  border-radius: 22px;
+  padding: 20px;
+  background: #eaf4ff;
+  border: 1px solid #bfdbfe;
+  text-align: right;
+}
+
+.selected-plan-card span {
+  color: var(--color-text-muted);
+  font-weight: 900;
+}
+
+.selected-plan-card strong {
+  font-size: 2rem;
+  color: var(--color-text);
+}
+
+.selected-plan-card small {
+  color: var(--color-text-muted);
+  font-weight: 900;
+}
+
+.checkout-form {
+  display: grid;
+  gap: 18px;
+}
+
+.checkout-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+.form-field {
+  display: grid;
+  gap: 8px;
+}
+
+.form-field span {
+  color: var(--color-text-muted);
+  font-weight: 900;
+}
+
+.form-field input {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-soft);
+  color: var(--color-text);
+  padding: 15px 16px;
+  outline: none;
+  font-weight: 800;
+}
+
+.form-field input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 4px rgba(47, 128, 237, 0.12);
+}
+
+.checkout-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 14px;
+  margin-top: 8px;
+}
+
+.btn-secondary {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-soft);
+  color: var(--color-text);
+  font-weight: 900;
+  padding: 14px 18px;
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  transform: translateY(-1px);
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modal-pop {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 760px) {
+  .checkout-modal {
+    padding: 26px;
+    border-radius: 22px;
+  }
+
+  .checkout-header {
+    grid-template-columns: 1fr;
+    padding-right: 38px;
+  }
+
+  .selected-plan-card {
+    text-align: left;
+  }
+
+  .checkout-row {
+    grid-template-columns: 1fr;
+  }
+
+  .checkout-actions {
+    flex-direction: column-reverse;
+  }
+
+  .checkout-actions .btn-primary,
+  .checkout-actions .btn-secondary {
+    width: 100%;
+  }
+}
+</style>
+
+============================================================
 FILE: ./src/app/plan/presentation/components/plan-card/plan-card.component.vue
 ============================================================
 <template>
@@ -12632,241 +16442,139 @@ function getBillingPeriodLabel(period) {
 </style>
 
 ============================================================
-FILE: ./src/app/plan/presentation/pages/plan/plan-page.component.vue
+FILE: ./src/app/plan/presentation/pages/plan/components/checkout-form/checkout-form.component.vue
 ============================================================
 <template>
-  <AppLayout>
-    <section class="page-header">
-      <div>
-        <h1 class="page-title">
-          {{ t('plans.page.title') }}
-        </h1>
+  <Teleport to="body">
+    <div
+        class="checkout-backdrop"
+        @click.self="emit('close')"
+    >
+      <section class="checkout-modal">
+        <button
+            class="checkout-close"
+            type="button"
+            aria-label="Cerrar formulario de pago"
+            @click="emit('close')"
+        >
+          ×
+        </button>
 
-        <p class="page-subtitle">
-          {{ t('plans.page.subtitle') }}
-        </p>
-      </div>
+        <header class="checkout-header">
+          <div>
+            <span class="checkout-badge">
+              {{ t("plans.page.checkoutTitle") }}
+            </span>
 
-      <button
-          v-if="state.subscription"
-          class="btn-primary"
-          type="button"
-          @click="cancelSubscription"
-      >
-        {{ t('plans.page.cancelSubscription') }}
-      </button>
-    </section>
+            <h2>{{ t("plans.page.selectedPlan") }}</h2>
 
-    <div v-if="!state.subscription" class="subscription-warning">
-      {{ t('plans.page.noActiveSubscription') }}
-    </div>
-
-    <section class="grid grid-3 plans-summary">
-      <UiCard :title="t('plans.page.activePlan')" compact>
-        <p class="summary-number summary-text">
-          {{ state.summary.activePlanName }}
-        </p>
-        <p class="summary-label">
-          {{ getSubscriptionStatusLabel(state.subscription?.status) }}
-        </p>
-      </UiCard>
-
-      <UiCard :title="t('plans.page.capacity')" compact>
-        <p class="summary-number">
-          {{ state.summary.maxSites }}
-        </p>
-        <p class="summary-label">
-          {{ t('plans.page.allowedSites') }}
-        </p>
-      </UiCard>
-
-      <UiCard :title="t('plans.page.payments')" compact>
-        <p class="summary-number">
-          S/ {{ Number(state.summary.totalPaid || 0).toFixed(2) }}
-        </p>
-        <p class="summary-label">
-          {{ t('plans.page.totalPaid') }}
-        </p>
-      </UiCard>
-    </section>
-
-    <section class="plans-list">
-      <PlanCard
-          v-for="plan in state.plans"
-          :key="plan.id"
-          :plan="plan"
-          :active="plan.id === state.subscription?.planId"
-          @buy="openCheckout"
-      />
-    </section>
-
-    <Teleport to="body">
-      <div
-          v-if="selectedPlan"
-          class="checkout-overlay"
-          @click.self="closeCheckout"
-      >
-        <aside class="checkout-drawer">
-          <div class="checkout-handle"></div>
-
-          <header class="checkout-header">
-            <div>
-              <h2>{{ t('plans.page.checkoutTitle') }}</h2>
-              <p>{{ t('plans.page.checkoutSubtitle') }}</p>
-            </div>
-
-            <button class="checkout-close" type="button" @click="closeCheckout">
-              ×
-            </button>
-          </header>
-
-          <div class="selected-plan">
-            <span>{{ t('plans.page.selectedPlan') }}</span>
-            <strong>
-              {{ selectedPlan.name }} · S/ {{ Number(selectedPlan.price).toFixed(2) }}
-            </strong>
+            <p>
+              {{ t("plans.page.checkoutSubtitle") }}
+            </p>
           </div>
 
-          <form class="checkout-form" @submit.prevent="handlePurchase">
-            <label class="form-field">
-              <span>{{ t('plans.page.cardholderName') }}</span>
-              <input
-                  v-model="checkout.cardholderName"
-                  type="text"
-                  placeholder="Jean Loa"
-              />
-            </label>
+          <aside class="checkout-plan">
+            <span>{{ plan.name }}</span>
+            <strong>S/ {{ Number(plan.price || 0).toFixed(2) }}</strong>
+            <small>{{ t("plans.page.monthly") }}</small>
+          </aside>
+        </header>
 
+        <form
+            class="checkout-form"
+            @submit.prevent="handleSubmit"
+        >
+          <label class="form-field">
+            <span>{{ t("plans.page.cardholderName") }}</span>
+            <input
+                v-model="checkout.cardholderName"
+                type="text"
+                autocomplete="cc-name"
+                required
+                placeholder="Jean Loa"
+            />
+          </label>
+
+          <label class="form-field">
+            <span>{{ t("plans.page.cardNumber") }}</span>
+            <input
+                v-model="checkout.cardNumber"
+                type="text"
+                inputmode="numeric"
+                autocomplete="cc-number"
+                maxlength="19"
+                required
+                placeholder="4242 4242 4242 4242"
+                @input="handleCardNumberInput"
+            />
+          </label>
+
+          <div class="checkout-row">
             <label class="form-field">
-              <span>{{ t('plans.page.cardNumber') }}</span>
+              <span>{{ t("plans.page.expirationDate") }}</span>
               <input
-                  :value="checkout.cardNumber"
+                  v-model="checkout.expirationDate"
                   type="text"
                   inputmode="numeric"
-                  autocomplete="cc-number"
-                  maxlength="19"
-                  placeholder="4242 4242 4242 4242"
-                  @input="handleCardNumberInput"
+                  autocomplete="cc-exp"
+                  maxlength="5"
+                  required
+                  placeholder="MM/YY"
+                  @input="handleExpirationDateInput"
               />
             </label>
 
-            <div class="form-grid">
-              <label class="form-field">
-                <span>{{ t('plans.page.expirationDate') }}</span>
-                <input
-                    :value="checkout.expirationDate"
-                    type="text"
-                    inputmode="numeric"
-                    autocomplete="cc-exp"
-                    maxlength="5"
-                    placeholder="12/29"
-                    @input="handleExpirationDateInput"
-                />
-              </label>
-
-              <label class="form-field">
-                <span>{{ t('plans.page.securityCode') }}</span>
-                <input
-                    :value="checkout.securityCode"
-                    type="password"
-                    inputmode="numeric"
-                    autocomplete="cc-csc"
-                    maxlength="3"
-                    placeholder="123"
-                    @input="handleSecurityCodeInput"
-                />
-              </label>
-            </div>
-
-            <div class="checkout-actions">
-              <button class="btn-secondary" type="button" @click="closeCheckout">
-                {{ t('plans.page.closeForm') }}
-              </button>
-
-              <button class="btn-primary" type="submit">
-                {{ t('plans.page.confirmPurchase') }}
-              </button>
-            </div>
-          </form>
-        </aside>
-      </div>
-    </Teleport>
-
-    <section class="grid grid-2 plans-bottom">
-      <UiCard :title="t('plans.page.paymentHistory')">
-        <div v-if="state.payments.length === 0" class="empty-state">
-          {{ t('plans.page.noPayments') }}
-        </div>
-
-        <div v-else class="simple-list">
-          <div
-              v-for="payment in state.payments"
-              :key="payment.id"
-              class="simple-item"
-          >
-            <div>
-              <strong>S/ {{ Number(payment.amount || 0).toFixed(2) }}</strong>
-              <span>{{ payment.method }}</span>
-            </div>
-
-            <span class="badge badge-success">
-              {{ getPaymentStatusLabel(payment.status) }}
-            </span>
+            <label class="form-field">
+              <span>{{ t("plans.page.securityCode") }}</span>
+              <input
+                  v-model="checkout.securityCode"
+                  type="text"
+                  inputmode="numeric"
+                  autocomplete="cc-csc"
+                  maxlength="3"
+                  required
+                  placeholder="123"
+                  @input="handleSecurityCodeInput"
+              />
+            </label>
           </div>
-        </div>
-      </UiCard>
 
-      <UiCard :title="t('plans.page.serviceRequest')">
-        <div v-if="state.serviceRequest.length === 0" class="empty-state">
-          {{ t('plans.page.noRequest') }}
-        </div>
+          <footer class="checkout-actions">
+            <button
+                class="btn-secondary"
+                type="button"
+                @click="emit('close')"
+            >
+              {{ t("plans.page.closeForm") }}
+            </button>
 
-        <div v-else class="simple-list">
-          <div
-              v-for="request in state.serviceRequest"
-              :key="request.id"
-              class="simple-item"
-          >
-            <div>
-              <strong>{{ getRequestTypeLabel(request.type) }}</strong>
-              <span>{{ request.description }}</span>
-            </div>
-
-            <span class="badge badge-primary">
-              {{ getRequestStatusLabel(request.status) }}
-            </span>
-          </div>
-        </div>
-      </UiCard>
-    </section>
-  </AppLayout>
+            <button
+                class="btn-primary"
+                type="submit"
+            >
+              {{ t("plans.page.confirmPurchase") }}
+            </button>
+          </footer>
+        </form>
+      </section>
+    </div>
+  </Teleport>
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from "vue";
-import { useRouter } from "vue-router";
+import { onBeforeUnmount, onMounted, reactive } from "vue";
 
-import AppLayout from "../../../../shared/presentation/components/app-layout/app-layout.component.vue";
-import UiCard from "../../../../shared/presentation/components/ui-card/ui-card.component.vue";
+import { useTranslation } from "../../../../../../shared/application/services/translation.service";
 
-import PlanCard from "../../components/plan-card/plan-card.component.vue";
+defineProps({
+  plan: {
+    type: Object,
+    required: true,
+  },
+});
 
-import { usePlanStore } from "../../../application/store/plan.store";
-import { useTranslation } from "../../../../shared/application/services/translation.service";
-
-const router = useRouter();
-
-const {
-  state,
-  loadPlanPage,
-  subscribeToPlan,
-  changePlan,
-  cancelSubscription,
-} = usePlanStore();
-
+const emit = defineEmits(["submit", "close"]);
 const { t } = useTranslation();
-
-const selectedPlan = ref(null);
 
 const checkout = reactive({
   cardholderName: "",
@@ -12875,20 +16583,20 @@ const checkout = reactive({
   securityCode: "",
 });
 
-onMounted(async () => {
-  await loadPlanPage();
+onMounted(() => {
+  document.body.classList.add("modal-open");
+  window.addEventListener("keydown", handleEscape);
 });
 
-function openCheckout(plan) {
-  selectedPlan.value = plan;
-}
+onBeforeUnmount(() => {
+  document.body.classList.remove("modal-open");
+  window.removeEventListener("keydown", handleEscape);
+});
 
-function closeCheckout() {
-  selectedPlan.value = null;
-  checkout.cardholderName = "";
-  checkout.cardNumber = "";
-  checkout.expirationDate = "";
-  checkout.securityCode = "";
+function handleEscape(event) {
+  if (event.key === "Escape") {
+    emit("close");
+  }
 }
 
 function onlyNumbers(value) {
@@ -12909,47 +16617,11 @@ function formatExpirationDate(value) {
     return "";
   }
 
-  if (numbers.length === 1) {
-    const firstDigit = Number(numbers);
-
-    if (firstDigit > 1) {
-      return `0${firstDigit}`;
-    }
-
+  if (numbers.length <= 2) {
     return numbers;
   }
 
-  let month = numbers.slice(0, 2);
-  let monthNumber = Number(month);
-
-  if (monthNumber < 1) {
-    month = "01";
-  }
-
-  if (monthNumber > 12) {
-    month = "12";
-  }
-
-  if (numbers.length <= 2) {
-    return month;
-  }
-
-  const yearInput = numbers.slice(2);
-  const currentYearShort = new Date().getFullYear() % 100;
-
-  if (yearInput.length === 1) {
-    return `${month}/${yearInput}`;
-  }
-
-  let yearNumber = Number(yearInput);
-
-  if (yearNumber < currentYearShort) {
-    yearNumber = currentYearShort;
-  }
-
-  const year = String(yearNumber).padStart(2, "0");
-
-  return `${month}/${year}`;
+  return `${numbers.slice(0, 2)}/${numbers.slice(2)}`;
 }
 
 function formatSecurityCode(value) {
@@ -12971,308 +16643,149 @@ function handleSecurityCodeInput(event) {
   event.target.value = checkout.securityCode;
 }
 
-async function handlePurchase() {
-  if (!selectedPlan.value) return;
-
-  if (!state.subscription) {
-    await subscribeToPlan(selectedPlan.value.id);
-  } else if (state.subscription.planId !== selectedPlan.value.id) {
-    await changePlan(selectedPlan.value.id);
-  }
-
-  closeCheckout();
-
-  await router.push({ name: "dashboard" });
-}
-
-function getSubscriptionStatusLabel(status) {
-  const keys = {
-    active: "plans.status.active",
-    cancelled: "plans.status.cancelled",
-    suspended: "plans.status.suspended",
-    expired: "plans.status.expired",
-  };
-
-  return t(keys[status] ?? "plans.status.unknown");
-}
-
-function getPaymentStatusLabel(status) {
-  const keys = {
-    paid: "plans.status.paid",
-    pending: "plans.status.pending",
-    failed: "plans.status.failed",
-    refunded: "plans.status.refunded",
-  };
-
-  return t(keys[status] ?? "plans.status.unknown");
-}
-
-function getRequestStatusLabel(status) {
-  const keys = {
-    open: "notifications.status.open",
-    resolved: "notifications.status.resolved",
-    closed: "notifications.status.closed",
-  };
-
-  return t(keys[status] ?? "plans.status.unknown");
-}
-
-function getRequestTypeLabel(type) {
-  const keys = {
-    "change-plan": "plans.request.changePlan",
-    cancellation: "plans.request.cancellation",
-    support: "plans.request.support",
-  };
-
-  return t(keys[type] ?? "plans.request.request");
+function handleSubmit() {
+  emit("submit", {
+    cardholderName: checkout.cardholderName,
+    cardNumber: checkout.cardNumber,
+    expirationDate: checkout.expirationDate,
+    securityCode: checkout.securityCode,
+  });
 }
 </script>
 
 <style scoped>
-.subscription-warning {
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  background: var(--color-primary-light);
-  color: var(--color-primary);
-  font-weight: 900;
-  line-height: 1.5;
-  padding: 18px 22px;
-  margin-bottom: 20px;
+.checkout-backdrop,
+.checkout-backdrop * {
+  font-family: var(--font-main);
 }
 
-.plans-summary {
-  margin-bottom: 20px;
-}
-
-.plans-list {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 20px;
-}
-
-.checkout-section,
-.plans-bottom {
-  margin-top: 20px;
-}
-
-.selected-plan {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface-soft);
-  padding: 16px;
-  margin-bottom: 18px;
-}
-
-.selected-plan span {
-  color: var(--color-text-muted);
-}
-
-.selected-plan strong {
-  color: var(--color-text);
-}
-
-.checkout-form {
-  display: grid;
-  gap: 16px;
-}
-
-.form-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
-}
-
-.form-field {
-  display: grid;
-  gap: 8px;
-}
-
-.form-field span {
-  color: var(--color-text-muted);
-  font-weight: 800;
-}
-
-.form-field input {
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface-soft);
-  color: var(--color-text);
-  padding: 14px 16px;
-  outline: none;
-}
-
-.checkout-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-}
-
-.summary-number {
-  color: var(--color-text);
-  font-size: 34px;
-  font-weight: 900;
-  line-height: 1;
-  margin: 0 0 8px;
-}
-
-.summary-text {
-  font-size: 24px;
-}
-
-.summary-label {
-  color: var(--color-text-muted);
-  margin: 0;
-}
-
-.empty-state {
-  border: 1px dashed var(--color-border);
-  border-radius: var(--radius-md);
-  color: var(--color-text-muted);
-  padding: 18px;
-}
-
-.simple-list {
-  display: grid;
-  gap: 14px;
-}
-
-.simple-item {
-  display: flex;
-  justify-content: space-between;
-  gap: 14px;
-  border-bottom: 1px solid var(--color-border);
-  padding-bottom: 14px;
-}
-
-.simple-item:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
-}
-
-.simple-item strong {
-  display: block;
-  color: var(--color-text);
-  margin-bottom: 4px;
-}
-
-.simple-item span {
-  color: var(--color-text-muted);
-  margin: 0;
-}
-
-@media (max-width: 900px) {
-  .plans-list,
-  .form-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .simple-item,
-  .selected-plan,
-  .checkout-actions {
-    flex-direction: column;
-  }
-}
-
-.checkout-overlay {
+.checkout-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 100;
+  z-index: 9999;
   display: grid;
   place-items: center;
-  background: rgba(7, 20, 47, 0.38);
-  backdrop-filter: blur(8px);
   padding: 24px;
-  animation: overlayIn 180ms ease-out;
+  background: rgba(15, 23, 42, 0.72);
+  backdrop-filter: blur(8px);
+  animation: fade-in 0.2s ease;
 }
 
-.checkout-drawer {
-  width: min(100%, 760px);
-  max-height: min(92vh, 760px);
+.checkout-modal {
+  position: relative;
+  width: min(100%, 720px);
+  max-height: min(92vh, 820px);
   overflow-y: auto;
+  border-radius: 28px;
+  background:
+      radial-gradient(circle at top left, rgba(47, 128, 237, 0.16), transparent 34%),
+      var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 28px 28px var(--radius-lg) var(--radius-lg);
-  background: var(--color-surface);
-  box-shadow: 0 28px 80px rgba(15, 23, 42, 0.28);
-  padding: 18px 24px 24px;
-  animation: drawerUp 240ms ease-out;
+  box-shadow: 0 30px 90px rgba(15, 23, 42, 0.35);
+  padding: 34px;
+  animation: modal-pop 0.24s ease;
 }
 
-.checkout-handle {
-  width: 54px;
-  height: 6px;
+.checkout-close {
+  position: absolute;
+  top: 18px;
+  right: 20px;
+  width: 42px;
+  height: 42px;
+  border: none;
   border-radius: var(--radius-pill);
-  background: var(--color-border);
-  margin: 0 auto 18px;
+  background: var(--color-surface-soft);
+  color: var(--color-text);
+  font-size: 30px;
+  font-weight: 900;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.checkout-close:hover {
+  transform: scale(1.05);
 }
 
 .checkout-header {
-  display: flex;
-  justify-content: space-between;
-  gap: 18px;
-  align-items: flex-start;
-  margin-bottom: 18px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 24px;
+  align-items: start;
+  margin-bottom: 28px;
+  padding-right: 44px;
+}
+
+.checkout-badge {
+  display: inline-flex;
+  width: fit-content;
+  margin-bottom: 14px;
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  border: 1px solid #bfdbfe;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1;
 }
 
 .checkout-header h2 {
   color: var(--color-text);
-  font-size: 24px;
+  font-size: clamp(2rem, 4vw, 2.6rem);
   font-weight: 900;
-  line-height: 1.1;
-  margin: 0 0 8px;
+  letter-spacing: -0.05em;
+  line-height: 1;
+  margin: 0 0 10px;
 }
 
 .checkout-header p {
   color: var(--color-text-muted);
+  font-size: 15px;
+  font-weight: 500;
   line-height: 1.5;
   margin: 0;
 }
 
-.checkout-close {
+.checkout-plan {
+  min-width: 190px;
   display: grid;
-  place-items: center;
-  width: 42px;
-  height: 42px;
-  border: 1px solid var(--color-border);
-  border-radius: 50%;
-  background: var(--color-surface-soft);
-  color: var(--color-text);
-  font-size: 26px;
+  gap: 6px;
+  border-radius: 22px;
+  padding: 20px;
+  background: var(--color-primary-light);
+  border: 1px solid #bfdbfe;
+  text-align: right;
+}
+
+.checkout-plan span {
+  color: var(--color-text-muted);
+  font-size: 15px;
   font-weight: 900;
+}
+
+.checkout-plan strong {
+  color: var(--color-text);
+  font-size: 32px;
+  font-weight: 900;
+  letter-spacing: -0.06em;
   line-height: 1;
 }
 
-.selected-plan {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface-soft);
-  padding: 16px;
-  margin-bottom: 18px;
-}
-
-.selected-plan span {
+.checkout-plan small {
   color: var(--color-text-muted);
-}
-
-.selected-plan strong {
-  color: var(--color-text);
-  text-align: right;
+  font-size: 14px;
+  font-weight: 900;
 }
 
 .checkout-form {
   display: grid;
-  gap: 16px;
+  gap: 18px;
 }
 
-.form-grid {
+.checkout-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 14px;
+  gap: 18px;
 }
 
 .form-field {
@@ -13282,32 +16795,50 @@ function getRequestTypeLabel(type) {
 
 .form-field span {
   color: var(--color-text-muted);
-  font-weight: 800;
+  font-size: 14px;
+  font-weight: 900;
 }
 
 .form-field input {
+  width: 100%;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: var(--color-surface-soft);
   color: var(--color-text);
-  padding: 14px 16px;
+  padding: 15px 16px;
   outline: none;
+  font-size: 15px;
+  font-weight: 800;
 }
 
 .form-field input:focus {
   border-color: var(--color-primary);
-  background: #ffffff;
   box-shadow: 0 0 0 4px rgba(47, 128, 237, 0.12);
 }
 
 .checkout-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 12px;
-  margin-top: 4px;
+  gap: 14px;
+  margin-top: 8px;
 }
 
-@keyframes overlayIn {
+.checkout-actions .btn-primary,
+.checkout-actions .btn-secondary {
+  min-height: 52px;
+  border-radius: var(--radius-md);
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.checkout-actions .btn-secondary {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-soft);
+  color: var(--color-text);
+  padding: 14px 18px;
+}
+
+@keyframes fade-in {
   from {
     opacity: 0;
   }
@@ -13317,10 +16848,10 @@ function getRequestTypeLabel(type) {
   }
 }
 
-@keyframes drawerUp {
+@keyframes modal-pop {
   from {
     opacity: 0;
-    transform: translateY(34px) scale(0.98);
+    transform: translateY(18px) scale(0.96);
   }
 
   to {
@@ -13329,36 +16860,693 @@ function getRequestTypeLabel(type) {
   }
 }
 
-@media (max-width: 700px) {
-  .checkout-overlay {
-    padding: 12px;
+@media (max-width: 760px) {
+  .checkout-modal {
+    padding: 26px;
+    border-radius: 22px;
   }
 
-  .checkout-drawer {
-    width: 100%;
-    max-height: 88vh;
-    border-radius: 24px 24px 18px 18px;
-    padding: 14px 18px 20px;
+  .checkout-header {
+    grid-template-columns: 1fr;
+    padding-right: 38px;
   }
 
-  .checkout-header,
-  .selected-plan,
-  .checkout-actions {
-    flex-direction: column;
-  }
-
-  .selected-plan strong {
+  .checkout-plan {
     text-align: left;
   }
 
-  .form-grid {
+  .checkout-row {
     grid-template-columns: 1fr;
+  }
+
+  .checkout-actions {
+    flex-direction: column-reverse;
   }
 
   .checkout-actions .btn-primary,
   .checkout-actions .btn-secondary {
     width: 100%;
   }
+}
+</style>
+
+============================================================
+FILE: ./src/app/plan/presentation/pages/plan/plan-page.component.vue
+============================================================
+<template>
+  <AppLayout>
+    <section class="plans-page">
+      <header class="page-header">
+        <div>
+          <h1>{{ t("plans.page.title") }}</h1>
+          <p>{{ t("plans.page.subtitle") }}</p>
+        </div>
+
+        <button
+            v-if="state.subscription?.id"
+            class="btn-primary"
+            type="button"
+            @click="handleCancelSubscription"
+        >
+          {{ t("plans.page.cancelSubscription") }}
+        </button>
+      </header>
+
+      <p v-if="state.error" class="error-message">
+        {{ state.error }}
+      </p>
+
+      <p v-if="state.message" class="success-message">
+        {{ state.message }}
+      </p>
+
+      <div
+          v-if="!state.subscription?.id"
+          class="subscription-warning"
+      >
+        {{ t("plans.page.noActiveSubscription") }}
+      </div>
+
+      <section class="summary-grid">
+        <UiCard :title="t('plans.page.activePlan')">
+          <strong class="summary-value">
+            {{ state.summary.activePlanName || t("plans.status.unknown") }}
+          </strong>
+
+          <p class="summary-label">
+            {{ getSubscriptionStatusLabel(state.summary.subscriptionStatus) }}
+          </p>
+        </UiCard>
+
+        <UiCard :title="t('plans.page.capacity')">
+          <strong class="summary-value">
+            {{ state.summary.maxSites || 0 }}
+          </strong>
+
+          <p class="summary-label">
+            {{ t("plans.page.allowedSites") }}
+          </p>
+        </UiCard>
+
+        <UiCard :title="t('plans.page.payments')">
+          <strong class="summary-value">
+            S/ {{ Number(state.summary.totalPaid || 0).toFixed(2) }}
+          </strong>
+
+          <p class="summary-label">
+            {{ t("plans.page.totalPaid") }}
+          </p>
+        </UiCard>
+      </section>
+
+      <section class="plans-grid">
+        <article
+            v-for="plan in state.plans"
+            :key="plan.id"
+            class="plan-card"
+            :class="{
+            'plan-card-popular': plan.recommended,
+            'plan-card-active': state.subscription?.planId === plan.id
+          }"
+        >
+          <span
+              v-if="plan.recommended"
+              class="plan-badge"
+          >
+            {{ t("plans.page.recommended") }}
+          </span>
+
+          <div class="plan-header">
+            <div>
+              <h2>{{ plan.name }}</h2>
+              <p>{{ plan.description }}</p>
+            </div>
+
+            <div class="plan-price">
+              S/ {{ Number(plan.price || 0).toFixed(2) }}
+              <span>{{ t("plans.page.monthly") }}</span>
+            </div>
+          </div>
+
+          <p class="plan-capacity">
+            {{ plan.maxSites }} {{ t("plans.page.sites") }} ·
+            {{ plan.maxDevices }} {{ t("plans.page.devices") }}
+          </p>
+
+          <ul class="plan-features">
+            <li
+                v-for="feature in plan.features || []"
+                :key="feature.id"
+            >
+              {{ feature.name }}
+            </li>
+          </ul>
+
+          <button
+              class="btn-primary plan-action"
+              type="button"
+              :disabled="state.subscription?.planId === plan.id"
+              @click="openCheckout(plan)"
+          >
+            {{
+              state.subscription?.planId === plan.id
+                  ? t("plans.page.currentPlan")
+                  : state.subscription?.id
+                      ? t("plans.requests.changePlan")
+                      : t("plans.page.buyPlan")
+            }}
+          </button>
+        </article>
+      </section>
+
+      <CheckoutForm
+          v-if="selectedPlan"
+          :plan="selectedPlan"
+          @submit="handleCheckoutSubmit"
+          @close="closeCheckout"
+      />
+
+      <section class="details-grid">
+        <UiCard :title="t('plans.page.paymentHistory')">
+          <div
+              v-if="state.payments.length === 0"
+              class="empty-state"
+          >
+            {{ t("plans.page.noPayments") }}
+          </div>
+
+          <div
+              v-for="payment in state.payments"
+              :key="payment.id"
+              class="detail-row"
+          >
+            <div>
+              <strong>
+                S/ {{ Number(payment.amount || 0).toFixed(2) }}
+              </strong>
+
+              <p>{{ payment.method }}</p>
+            </div>
+
+            <span class="status-pill">
+              {{ getPaymentStatusLabel(payment.status) }}
+            </span>
+          </div>
+        </UiCard>
+
+        <UiCard :title="t('plans.page.serviceRequest')">
+          <div
+              v-if="state.serviceRequest.length === 0"
+              class="empty-state"
+          >
+            {{ t("plans.page.noRequest") }}
+          </div>
+
+          <div
+              v-for="request in state.serviceRequest"
+              :key="request.id"
+              class="detail-row"
+          >
+            <div>
+              <strong>
+                {{ getRequestTypeLabel(request.type) }}
+              </strong>
+
+              <p>{{ request.description }}</p>
+            </div>
+
+            <span class="status-pill">
+              {{ getRequestStatusLabel(request.status) }}
+            </span>
+          </div>
+        </UiCard>
+      </section>
+    </section>
+  </AppLayout>
+</template>
+
+<script setup>
+import { onMounted, ref } from "vue";
+import { useRoute, useRouter } from "vue-router";
+
+import AppLayout from "../../../../shared/presentation/components/app-layout/app-layout.component.vue";
+import UiCard from "../../../../shared/presentation/components/ui-card/ui-card.component.vue";
+
+import CheckoutForm from "./components/checkout-form/checkout-form.component.vue";
+
+import { usePlanStore } from "../../../application/store/plan.store";
+import { useTranslation } from "../../../../shared/application/services/translation.service";
+
+const route = useRoute();
+const router = useRouter();
+
+const {
+  state,
+  loadPlanPage,
+  subscribeToPlan,
+  changePlan,
+  cancelSubscription,
+} = usePlanStore();
+
+const { t } = useTranslation();
+
+const selectedPlan = ref(null);
+
+onMounted(async () => {
+  await loadPlanPage();
+  await applyLandingSelectedPlan();
+});
+
+async function applyLandingSelectedPlan() {
+  const planIdFromQuery = route.query.plan ? String(route.query.plan) : "";
+  const checkoutFromQuery = route.query.checkout ? String(route.query.checkout) : "";
+
+  const pendingPlanId =
+      planIdFromQuery || localStorage.getItem("lowcortisol.pendingPlanId");
+
+  const pendingCheckout =
+      checkoutFromQuery || localStorage.getItem("lowcortisol.pendingCheckout");
+
+  if (!pendingPlanId) {
+    return;
+  }
+
+  const selected = state.plans.find((plan) => plan.id === pendingPlanId);
+
+  if (!selected) {
+    clearPendingPlan();
+    return;
+  }
+
+  if (pendingCheckout === "paid") {
+    if (state.subscription?.planId !== pendingPlanId) {
+      if (state.subscription?.id) {
+        await changePlan(pendingPlanId);
+      } else {
+        await subscribeToPlan(pendingPlanId);
+      }
+    }
+
+    clearPendingPlan();
+
+    await router.replace({
+      name: "plans",
+    });
+
+    return;
+  }
+
+  selectedPlan.value = selected;
+
+  await router.replace({
+    name: "plans",
+  });
+}
+
+function openCheckout(plan) {
+  if (state.subscription?.planId === plan.id) {
+    return;
+  }
+
+  selectedPlan.value = plan;
+}
+
+function closeCheckout() {
+  selectedPlan.value = null;
+}
+
+async function handleCheckoutSubmit() {
+  if (!selectedPlan.value) {
+    return;
+  }
+
+  if (state.subscription?.id) {
+    await changePlan(selectedPlan.value.id);
+  } else {
+    await subscribeToPlan(selectedPlan.value.id);
+  }
+
+  closeCheckout();
+}
+
+async function handleCancelSubscription() {
+  await cancelSubscription();
+}
+
+function clearPendingPlan() {
+  localStorage.removeItem("lowcortisol.pendingPlanId");
+  localStorage.removeItem("lowcortisol.pendingPlanCode");
+  localStorage.removeItem("lowcortisol.pendingCheckout");
+  localStorage.removeItem("lowcortisol.pendingPaymentMethod");
+}
+
+function getSubscriptionStatusLabel(status) {
+  const labels = {
+    active: t("plans.status.active"),
+    cancelled: t("plans.status.cancelled"),
+    suspended: t("plans.status.suspended"),
+    expired: t("plans.status.expired"),
+    unknown: t("plans.status.unknown"),
+  };
+
+  return labels[status] || t("plans.status.unknown");
+}
+
+function getPaymentStatusLabel(status) {
+  const labels = {
+    paid: t("plans.status.paid"),
+    pending: t("plans.status.pending"),
+    failed: t("plans.status.failed"),
+    refunded: t("plans.status.refunded"),
+  };
+
+  return labels[status] || status;
+}
+
+function getRequestTypeLabel(type) {
+  const labels = {
+    "change-plan": t("plans.requests.changePlan"),
+    cancellation: t("plans.requests.cancellation"),
+    support: t("plans.requests.support"),
+    request: t("plans.requests.request"),
+  };
+
+  return labels[type] || type;
+}
+
+function getRequestStatusLabel(status) {
+  const labels = {
+    open: t("plans.status.open"),
+    resolved: t("plans.status.resolved"),
+    closed: t("plans.status.closed"),
+  };
+
+  return labels[status] || status;
+}
+</script>
+
+<style scoped>
+.plans-page,
+.plans-page * {
+  font-family: var(--font-main);
+}
+
+.plans-page {
+  width: min(var(--page-max-width), calc(100% - 32px));
+  margin: 0 auto;
+  display: grid;
+  gap: 28px;
+}
+
+.plans-page button,
+.plans-page input,
+.plans-page select,
+.plans-page textarea {
+  font: inherit;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.page-header h1 {
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  margin: 0 0 8px;
+}
+
+.page-header p {
+  color: var(--color-text-muted);
+  font-size: 15px;
+  font-weight: 500;
+  margin: 0;
+}
+
+.subscription-warning {
+  background: #eaf4ff;
+  border: 1px solid #cbdff7;
+  color: var(--color-primary);
+  border-radius: 24px;
+  padding: 20px 24px;
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.summary-grid :deep(.ui-card) {
+  border-radius: 24px;
+  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.08);
+}
+
+.summary-value {
+  display: block;
+  color: var(--color-text);
+  font-size: 32px;
+  font-weight: 900;
+  letter-spacing: -0.05em;
+  line-height: 1;
+  margin-top: 8px;
+}
+
+.summary-label {
+  color: var(--color-text-muted);
+  font-size: 14px;
+  font-weight: 500;
+  margin: 8px 0 0;
+}
+
+.plans-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+  align-items: stretch;
+}
+
+.plan-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 420px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 24px;
+  padding: 28px;
+  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.08);
+  overflow: hidden;
+}
+
+.plan-card-popular {
+  background: #eaf4ff;
+  border: 2px solid var(--color-primary);
+}
+
+.plan-card-active {
+  border: 2px solid var(--color-success);
+}
+
+.plan-badge {
+  display: inline-flex;
+  width: fit-content;
+  background: #dbeafe;
+  color: var(--color-primary);
+  border: 1px solid #93c5fd;
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  margin-bottom: 14px;
+}
+
+.plan-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: flex-start;
+}
+
+.plan-header h2 {
+  color: var(--color-text);
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  margin: 0 0 12px;
+}
+
+.plan-header p {
+  max-width: 170px;
+  color: var(--color-text-muted);
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.plan-price {
+  min-width: 115px;
+  color: var(--color-text);
+  text-align: right;
+  font-size: 32px;
+  font-weight: 900;
+  letter-spacing: -0.06em;
+  line-height: 0.9;
+  white-space: nowrap;
+}
+
+.plan-price span {
+  display: block;
+  margin-top: 4px;
+  color: var(--color-text-muted);
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.plan-capacity {
+  color: var(--color-text-muted);
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  margin: 32px 0 28px;
+}
+
+.plan-features {
+  display: grid;
+  gap: 14px;
+  list-style: none;
+  padding: 0;
+  margin: 0 0 28px;
+}
+
+.plan-features li {
+  color: var(--color-text);
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+}
+
+.plan-features li::before {
+  content: "✓";
+  color: var(--color-success);
+  margin-right: 10px;
+}
+
+.plan-action {
+  width: 100%;
+  margin-top: auto;
+  border-radius: 14px;
+  padding: 16px 18px;
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+}
+
+.details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.details-grid :deep(.ui-card) {
+  border-radius: 24px;
+  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.08);
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  border-bottom: 1px solid var(--color-border);
+  padding: 14px 0;
+}
+
+.detail-row:last-child {
+  border-bottom: none;
+}
+
+.detail-row p {
+  color: var(--color-text-muted);
+  font-size: 14px;
+  font-weight: 500;
+  margin: 6px 0 0;
+}
+
+.status-pill {
+  border-radius: 999px;
+  border: 1px solid #bfdbfe;
+  background: #eaf4ff;
+  color: var(--color-text-muted);
+  font-size: 14px;
+  font-weight: 900;
+  padding: 10px 16px;
+  white-space: nowrap;
+}
+
+.empty-state {
+  border: 1px dashed var(--color-border);
+  border-radius: 16px;
+  color: var(--color-text-muted);
+  font-size: 14px;
+  font-weight: 500;
+  padding: 18px;
+}
+
+.error-message {
+  color: var(--color-danger);
+  font-weight: 900;
+}
+
+.success-message {
+  color: var(--color-success);
+  font-weight: 900;
+}
+
+@media (max-width: 1100px) {
+  .summary-grid,
+  .plans-grid,
+  .details-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .page-header {
+    flex-direction: column;
+  }
+
+  .plan-header {
+    flex-direction: column;
+  }
+
+  .plan-header p {
+    max-width: none;
+  }
+
+  .plan-price {
+    text-align: left;
+  }
+}
+
+.plans-page .plan-action {
+  font-family: var(--font-main);
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  border-radius: 14px;
+  padding: 16px 18px;
 }
 </style>
 
@@ -18127,6 +22315,10 @@ FILE: ./src/assets/styles/main.css
 @import "./variables.css";
 @import "./base.css";
 @import "./layout.css";
+
+body.modal-open {
+    overflow: hidden;
+}
 
 ============================================================
 FILE: ./src/assets/styles/variables.css
