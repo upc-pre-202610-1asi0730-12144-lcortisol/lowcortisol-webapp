@@ -338,6 +338,8 @@ function getRequestStatusLabel(status) {
 
 <style scoped>
 .plans-page {
+  width: min(100%, 1180px);
+  margin: 0 auto;
   display: grid;
   gap: 28px;
 }
@@ -363,7 +365,7 @@ function getRequestStatusLabel(status) {
   background: #eaf4ff;
   border: 1px solid #cbdff7;
   color: var(--color-primary);
-  border-radius: var(--radius-lg);
+  border-radius: 24px;
   padding: 20px 24px;
   font-weight: 900;
 }
@@ -372,6 +374,11 @@ function getRequestStatusLabel(status) {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 24px;
+}
+
+.summary-grid :deep(.ui-card) {
+  border-radius: 24px;
+  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.08);
 }
 
 .summary-value {
@@ -399,9 +406,10 @@ function getRequestStatusLabel(status) {
   min-height: 420px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-xl);
+  border-radius: 24px;
   padding: 28px;
-  box-shadow: var(--shadow-soft);
+  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.08);
+  overflow: hidden;
 }
 
 .plan-card-popular {
@@ -428,7 +436,8 @@ function getRequestStatusLabel(status) {
 .plan-header {
   display: flex;
   justify-content: space-between;
-  gap: 20px;
+  gap: 18px;
+  align-items: flex-start;
 }
 
 .plan-header h2 {
@@ -437,28 +446,34 @@ function getRequestStatusLabel(status) {
 }
 
 .plan-header p {
+  max-width: 170px;
   color: var(--color-text-muted);
   line-height: 1.5;
   margin: 0;
 }
 
 .plan-price {
-  min-width: 120px;
+  min-width: 115px;
   text-align: right;
-  font-size: 2rem;
+  font-size: 1.9rem;
   font-weight: 900;
+  color: var(--color-text);
+  white-space: nowrap;
+  line-height: 1.05;
 }
 
 .plan-price span {
   display: block;
   font-size: 0.9rem;
   color: var(--color-text-muted);
+  font-weight: 900;
+  white-space: normal;
 }
 
 .plan-capacity {
   color: var(--color-text-muted);
   font-weight: 900;
-  margin: 32px 0 20px;
+  margin: 32px 0 28px;
 }
 
 .plan-features {
@@ -482,12 +497,19 @@ function getRequestStatusLabel(status) {
 .plan-action {
   margin-top: auto;
   width: 100%;
+  border-radius: 14px;
+  padding: 16px 18px;
 }
 
 .details-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 24px;
+}
+
+.details-grid :deep(.ui-card) {
+  border-radius: 24px;
+  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.08);
 }
 
 .detail-row {
@@ -520,7 +542,7 @@ function getRequestStatusLabel(status) {
 
 .empty-state {
   border: 1px dashed var(--color-border);
-  border-radius: var(--radius-md);
+  border-radius: 16px;
   color: var(--color-text-muted);
   padding: 18px;
 }
@@ -548,6 +570,10 @@ function getRequestStatusLabel(status) {
 
   .plan-header {
     flex-direction: column;
+  }
+
+  .plan-header p {
+    max-width: none;
   }
 
   .plan-price {
