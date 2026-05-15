@@ -1,0 +1,866 @@
+@startuml
+title LowCortisol Webapp - Frontend Class Diagram
+
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam packageStyle rectangle
+
+' =========================
+' SHARED CONTEXT
+' =========================
+package "Shared" {
+
+  class AppRoute {
+    +path: string
+    +name: string
+    +component: Component
+    +meta: object
+  }
+
+  class ApiClientService {
+    +baseUrl: string
+    +get(endpoint: string, params?: object): Promise
+    +post(endpoint: string, payload: object): Promise
+    +patch(endpoint: string, payload: object): Promise
+    +delete(endpoint: string): Promise
+  }
+
+  class AuthSessionService {
+    +getCurrentUser(): User
+    +getCurrentUserId(): string
+    +saveSession(session: AuthSession): void
+    +clearSession(): void
+    +hasSession(): boolean
+  }
+
+  class TranslationService {
+    +currentLanguage: string
+    +loadLanguage(language: string): Promise
+    +t(key: string): string
+    +setLanguage(language: string): void
+  }
+
+  class SubscriptionAccessService {
+    +hasActiveSubscription(userId: string): Promise<boolean>
+    +canAccessProtectedRoute(userId: string): Promise<boolean>
+  }
+
+  class UiCardComponent {
+    +title: string
+    +render(): void
+  }
+
+  class LanguageSwitcherComponent {
+    +selectedLanguage: string
+    +changeLanguage(language: string): void
+  }
+
+  class AppLayoutComponent {
+    +showNavigation: boolean
+    +render(): void
+  }
+
+  class RouteGuard {
+    +beforeEach(to: AppRoute): boolean
+    +requiresAuth(route: AppRoute): boolean
+    +requiresSubscription(route: AppRoute): boolean
+  }
+}
+
+' =========================
+' IAM CONTEXT
+' =========================
+package "IAM" {
+
+  class User {
+    +id: string
+    +fullName: string
+    +email: string
+    +phone: string
+    +password: string
+    +status: string
+    +accessProfileId: string
+  }
+
+  class AccessProfile {
+    +id: string
+    +name: string
+    +role: string
+    +permissions: string[]
+  }
+
+  class AuthSession {
+    +id: string
+    +userId: string
+    +token: string
+    +status: string
+    +createdAt: string
+  }
+
+  class IamStore {
+    +state: object
+    +signIn(email: string, password: string): Promise
+    +signUp(payload: object): Promise
+    +recoverPassword(email: string): Promise
+    +updateProfile(payload: object): Promise
+    +signOut(): void
+    +restoreSession(): void
+  }
+
+  class IamFacade {
+    -iamApiService: IamApiService
+    +signIn(email: string, password: string): Promise
+    +signUp(payload: object): Promise
+    +recoverPassword(email: string): Promise
+    +getProfile(userId: string): Promise
+    +updateProfile(userId: string, payload: object): Promise
+    +signOut(): void
+  }
+
+  class IamApiService {
+    +getUser(): Promise<User[]>
+    +getUserByEmail(email: string): Promise<User>
+    +createUser(payload: object): Promise<User>
+    +updateUser(userId: string, payload: object): Promise<User>
+    +getAccessProfile(profileId: string): Promise<AccessProfile>
+    +createSession(payload: object): Promise<AuthSession>
+    +getSession(userId: string): Promise<AuthSession>
+    +closeSession(sessionId: string): Promise
+  }
+
+  class LoginPageComponent {
+    +email: string
+    +password: string
+    +submit(): Promise
+  }
+
+  class RegisterPageComponent {
+    +fullName: string
+    +email: string
+    +phone: string
+    +password: string
+    +submit(): Promise
+  }
+
+  class RecoverPageComponent {
+    +email: string
+    +submit(): Promise
+  }
+
+  class ProfilePageComponent {
+    +user: User
+    +accessProfile: AccessProfile
+    +session: AuthSession
+    +updateProfile(): Promise
+    +signOut(): void
+  }
+}
+
+' =========================
+' MONITORING CONTEXT
+' =========================
+package "Monitoring" {
+
+  class MonitoringSession {
+    +id: string
+    +siteId: string
+    +status: string
+    +startedAt: string
+    +finishedAt: string
+  }
+
+  class Reading {
+    +id: string
+    +sensorId: string
+    +siteId: string
+    +resourceType: string
+    +value: number
+    +unit: string
+    +createdAt: string
+  }
+
+  class Anomaly {
+    +id: string
+    +readingId: string
+    +type: string
+    +severity: string
+    +description: string
+    +createdAt: string
+  }
+
+  class Report {
+    +id: string
+    +siteId: string
+    +title: string
+    +period: string
+    +totalWater: number
+    +totalGas: number
+    +createdAt: string
+  }
+
+  class MonitoringStore {
+    +state: object
+    +loadDashboard(): Promise
+    +simulateReading(): Promise
+    +loadReport(): Promise
+    +generateReport(): Promise
+  }
+
+  class MonitoringFacade {
+    -monitoringApiService: MonitoringApiService
+    +getDashboard(): Promise
+    +getReading(): Promise
+    +getAnomaly(): Promise
+    +getReport(): Promise
+    +createReading(payload: object): Promise
+    +createReport(payload: object): Promise
+  }
+
+  class MonitoringApiService {
+    +getSession(): Promise<MonitoringSession[]>
+    +getReading(): Promise<Reading[]>
+    +getAnomaly(): Promise<Anomaly[]>
+    +getReport(): Promise<Report[]>
+    +createReading(payload: object): Promise<Reading>
+    +createReport(payload: object): Promise<Report>
+    +getSummary(): Promise<object>
+  }
+
+  class DashboardPageComponent {
+    +loadDashboard(): Promise
+    +simulateReading(): Promise
+  }
+
+  class ReportPageComponent {
+    +loadReport(): Promise
+    +generateReport(): Promise
+  }
+}
+
+' =========================
+' WORKSPACE CONTEXT
+' =========================
+package "Workspace" {
+
+  class Workspace {
+    +id: string
+    +ownerId: string
+    +name: string
+    +status: string
+  }
+
+  class Site {
+    +id: string
+    +workspaceId: string
+    +name: string
+    +type: string
+    +location: string
+    +status: string
+  }
+
+  class SiteMember {
+    +id: string
+    +siteId: string
+    +userId: string
+    +role: string
+  }
+
+  class SiteDeviceAssignment {
+    +id: string
+    +siteId: string
+    +deviceId: string
+    +assignedAt: string
+  }
+
+  class WorkspaceStore {
+    +state: object
+    +loadWorkspace(): Promise
+    +loadSite(type: string): Promise
+    +selectSite(siteId: string): void
+    +createSite(payload: object): Promise
+    +assignMember(payload: object): Promise
+    +assignDevice(payload: object): Promise
+  }
+
+  class WorkspaceFacade {
+    -workspaceApiService: WorkspaceApiService
+    +getWorkspace(): Promise
+    +getSite(type: string): Promise
+    +getSiteById(siteId: string): Promise
+    +createSite(payload: object): Promise
+    +assignMemberToSite(payload: object): Promise
+    +assignDeviceToSite(payload: object): Promise
+    +getSummary(): Promise
+  }
+
+  class WorkspaceApiService {
+    +getWorkspace(): Promise<Workspace>
+    +getSite(type: string): Promise<Site[]>
+    +getSiteById(siteId: string): Promise<Site>
+    +createSite(payload: object): Promise<Site>
+    +assignMemberToSite(payload: object): Promise<SiteMember>
+    +assignDeviceToSite(payload: object): Promise<SiteDeviceAssignment>
+    +getSummary(): Promise<object>
+  }
+
+  class SitePageComponent {
+    +selectedSite: Site
+    +filterType: string
+    +loadSite(): Promise
+    +selectSite(siteId: string): void
+    +createSite(): Promise
+    +assignMember(): Promise
+    +assignDevice(): Promise
+  }
+}
+
+' =========================
+' DEVICE CONTROL CONTEXT
+' =========================
+package "Device Control" {
+
+  class Device {
+    +id: string
+    +siteId: string
+    +name: string
+    +type: string
+    +status: string
+    +isOnline: boolean
+  }
+
+  class Sensor {
+    +id: string
+    +deviceId: string
+    +siteId: string
+    +name: string
+    +resourceType: string
+    +currentValue: number
+    +unit: string
+    +threshold: number
+    +status: string
+    +hasExceededThreshold: boolean
+  }
+
+  class Valve {
+    +id: string
+    +deviceId: string
+    +name: string
+    +resourceType: string
+    +status: string
+    +openingPercentage: number
+    +isOpen: boolean
+  }
+
+  class DeviceCommand {
+    +id: string
+    +deviceId: string
+    +commandType: string
+    +status: string
+    +createdAt: string
+  }
+
+  class DeviceControlStore {
+    +state: object
+    +loadDevice(): Promise
+    +selectDevice(deviceId: string): void
+    +createDevice(payload: object): Promise
+    +linkSensor(payload: object): Promise
+    +openValve(valveId: string): Promise
+    +closeValve(valveId: string): Promise
+    +executeSyncCommand(deviceId: string): Promise
+  }
+
+  class DeviceControlFacade {
+    -deviceControlApiService: DeviceControlApiService
+    +getDevice(): Promise
+    +getSensor(): Promise
+    +getValve(): Promise
+    +getCommand(): Promise
+    +createDevice(payload: object): Promise
+    +linkSensor(payload: object): Promise
+    +openValve(valveId: string): Promise
+    +closeValve(valveId: string): Promise
+    +executeSyncCommand(deviceId: string): Promise
+  }
+
+  class DeviceControlApiService {
+    +getDevice(): Promise<Device[]>
+    +getRawDevice(): Promise<Device[]>
+    +getSensor(): Promise<Sensor[]>
+    +getValve(): Promise<Valve[]>
+    +getCommand(): Promise<DeviceCommand[]>
+    +createDevice(payload: object): Promise<Device>
+    +linkSensor(payload: object): Promise<Sensor>
+    +openValve(valveId: string): Promise<Valve>
+    +closeValve(valveId: string): Promise<Valve>
+    +executeSyncCommand(deviceId: string): Promise<DeviceCommand>
+    +getSummary(): Promise<object>
+  }
+
+  class DevicePageComponent {
+    +selectedDevice: Device
+    +loadDevice(): Promise
+    +selectDevice(deviceId: string): void
+    +createDevice(): Promise
+    +linkSensor(): Promise
+    +openValve(valveId: string): Promise
+    +closeValve(valveId: string): Promise
+    +syncDevice(): Promise
+  }
+}
+
+' =========================
+' NOTIFICATION CONTEXT
+' =========================
+package "Notification" {
+
+  class Alert {
+    +id: string
+    +siteId: string
+    +sensorId: string
+    +resourceType: string
+    +title: string
+    +description: string
+    +severity: string
+    +status: string
+    +createdAt: string
+  }
+
+  class Threshold {
+    +id: string
+    +siteId: string
+    +sensorId: string
+    +resourceType: string
+    +warningLimit: number
+    +criticalLimit: number
+    +unit: string
+    +enabled: boolean
+  }
+
+  class Incident {
+    +id: string
+    +alertId: string
+    +siteId: string
+    +title: string
+    +description: string
+    +priority: string
+    +status: string
+  }
+
+  class NotificationChannel {
+    +id: string
+    +userId: string
+    +type: string
+    +target: string
+    +enabled: boolean
+  }
+
+  class AlertDelivery {
+    +id: string
+    +alertId: string
+    +channelId: string
+    +status: string
+    +sentAt: string
+  }
+
+  class NotificationStore {
+    +state: object
+    +loadNotification(): Promise
+    +createAlert(payload: object): Promise
+    +resolveAlert(alertId: string): Promise
+    +closeAlert(alertId: string): Promise
+    +createThreshold(payload: object): Promise
+    +sendAlert(alertId: string): Promise
+  }
+
+  class NotificationFacade {
+    -notificationApiService: NotificationApiService
+    +getAlert(): Promise
+    +getThreshold(): Promise
+    +getIncident(): Promise
+    +getChannel(): Promise
+    +getDelivery(): Promise
+    +createAlert(payload: object): Promise
+    +createThreshold(payload: object): Promise
+    +resolveAlert(alertId: string): Promise
+    +closeAlert(alertId: string): Promise
+    +sendAlert(alertId: string): Promise
+  }
+
+  class NotificationApiService {
+    +getAlert(): Promise<Alert[]>
+    +getThreshold(): Promise<Threshold[]>
+    +getIncident(): Promise<Incident[]>
+    +getChannel(): Promise<NotificationChannel[]>
+    +getDelivery(): Promise<AlertDelivery[]>
+    +createAlert(payload: object): Promise<Alert>
+    +createThreshold(payload: object): Promise<Threshold>
+    +resolveAlert(alertId: string): Promise<Alert>
+    +closeAlert(alertId: string): Promise<Alert>
+    +sendAlert(alertId: string): Promise<AlertDelivery[]>
+    +getSummary(): Promise<object>
+  }
+
+  class AlertPageComponent {
+    +loadNotification(): Promise
+    +createAlert(): Promise
+    +resolveAlert(alertId: string): Promise
+    +closeAlert(alertId: string): Promise
+    +createThreshold(): Promise
+    +sendAlert(alertId: string): Promise
+  }
+}
+
+' =========================
+' PLAN CONTEXT
+' =========================
+package "Plan" {
+
+  class Plan {
+    +id: string
+    +name: string
+    +price: number
+    +billingPeriod: string
+    +siteLimit: number
+    +deviceLimit: number
+    +recommended: boolean
+  }
+
+  class PlanFeature {
+    +id: string
+    +planId: string
+    +name: string
+    +enabled: boolean
+  }
+
+  class Subscription {
+    +id: string
+    +userId: string
+    +planId: string
+    +status: string
+    +startedAt: string
+    +cancelledAt: string
+  }
+
+  class Payment {
+    +id: string
+    +subscriptionId: string
+    +amount: number
+    +method: string
+    +status: string
+    +paidAt: string
+  }
+
+  class ServiceRequest {
+    +id: string
+    +subscriptionId: string
+    +type: string
+    +status: string
+    +createdAt: string
+  }
+
+  class PlanStore {
+    +state: object
+    +loadPlan(): Promise
+    +selectPlan(planId: string): void
+    +buyPlan(payload: object): Promise
+    +cancelSubscription(): Promise
+    +loadPayment(): Promise
+    +loadServiceRequest(): Promise
+  }
+
+  class PlanFacade {
+    -planApiService: PlanApiService
+    +getPlan(): Promise
+    +getPlanFeature(): Promise
+    +getSubscription(): Promise
+    +getPayment(): Promise
+    +getServiceRequest(): Promise
+    +buyPlan(payload: object): Promise
+    +cancelSubscription(subscriptionId: string): Promise
+    +getSummary(): Promise
+  }
+
+  class PlanApiService {
+    +getPlan(): Promise<Plan[]>
+    +getPlanFeature(): Promise<PlanFeature[]>
+    +getSubscription(): Promise<Subscription>
+    +getPayment(): Promise<Payment[]>
+    +getServiceRequest(): Promise<ServiceRequest[]>
+    +buyPlan(payload: object): Promise<Subscription>
+    +cancelSubscription(subscriptionId: string): Promise<Subscription>
+    +getSummary(): Promise<object>
+  }
+
+  class PlanPageComponent {
+    +selectedPlan: Plan
+    +showPaymentForm: boolean
+    +loadPlan(): Promise
+    +openPaymentForm(planId: string): void
+    +confirmPurchase(): Promise
+    +cancelSubscription(): Promise
+  }
+
+  class PaymentFormComponent {
+    +cardholderName: string
+    +cardNumber: string
+    +expirationDate: string
+    +cvv: string
+    +formatCardNumber(): void
+    +formatExpirationDate(): void
+    +validatePaymentForm(): boolean
+    +submit(): Promise
+  }
+}
+
+' =========================
+' SUPPORT CONTEXT
+' =========================
+package "Support" {
+
+  class SupportTicket {
+    +id: string
+    +userId: string
+    +siteId: string
+    +title: string
+    +description: string
+    +category: string
+    +priority: string
+    +status: string
+  }
+
+  class SupportMessage {
+    +id: string
+    +ticketId: string
+    +senderType: string
+    +message: string
+    +createdAt: string
+  }
+
+  class SupportAgent {
+    +id: string
+    +fullName: string
+    +email: string
+    +status: string
+  }
+
+  class SupportConversation {
+    +id: string
+    +ticketId: string
+    +status: string
+  }
+
+  class KnowledgeArticle {
+    +id: string
+    +title: string
+    +category: string
+    +content: string
+    +usefulCount: number
+  }
+
+  class SupportStore {
+    +state: object
+    +loadSupport(): Promise
+    +selectTicket(ticketId: string): void
+    +createTicket(payload: object): Promise
+    +sendMessage(payload: object): Promise
+    +resolveTicket(ticketId: string): Promise
+    +closeTicket(ticketId: string): Promise
+  }
+
+  class SupportFacade {
+    -supportApiService: SupportApiService
+    +getTicket(): Promise
+    +getMessage(ticketId: string): Promise
+    +getAgent(): Promise
+    +getConversation(): Promise
+    +getKnowledgeArticle(): Promise
+    +createTicket(payload: object): Promise
+    +sendMessage(payload: object): Promise
+    +resolveTicket(ticketId: string): Promise
+    +closeTicket(ticketId: string): Promise
+  }
+
+  class SupportApiService {
+    +getTicket(): Promise<SupportTicket[]>
+    +getMessage(ticketId: string): Promise<SupportMessage[]>
+    +getAgent(): Promise<SupportAgent[]>
+    +getConversation(): Promise<SupportConversation[]>
+    +getKnowledgeArticle(): Promise<KnowledgeArticle[]>
+    +createTicket(payload: object): Promise<SupportTicket>
+    +sendMessage(payload: object): Promise<SupportMessage>
+    +resolveTicket(ticketId: string): Promise<SupportTicket>
+    +closeTicket(ticketId: string): Promise<SupportTicket>
+    +getSummary(): Promise<object>
+  }
+
+  class SupportPageComponent {
+    +selectedTicket: SupportTicket
+    +message: string
+    +loadSupport(): Promise
+    +selectTicket(ticketId: string): void
+    +createTicket(): Promise
+    +sendMessage(): Promise
+    +resolveTicket(ticketId: string): Promise
+    +closeTicket(ticketId: string): Promise
+  }
+}
+
+' =========================
+' RELATIONSHIPS - SHARED
+' =========================
+AppLayoutComponent --> LanguageSwitcherComponent
+AppLayoutComponent --> UiCardComponent
+RouteGuard --> AuthSessionService
+RouteGuard --> SubscriptionAccessService
+TranslationService --> LanguageSwitcherComponent
+
+ApiClientService <.. IamApiService
+ApiClientService <.. MonitoringApiService
+ApiClientService <.. WorkspaceApiService
+ApiClientService <.. DeviceControlApiService
+ApiClientService <.. NotificationApiService
+ApiClientService <.. PlanApiService
+ApiClientService <.. SupportApiService
+
+' =========================
+' RELATIONSHIPS - IAM
+' =========================
+LoginPageComponent --> IamStore
+RegisterPageComponent --> IamStore
+RecoverPageComponent --> IamStore
+ProfilePageComponent --> IamStore
+
+IamStore --> IamFacade
+IamFacade --> IamApiService
+IamApiService --> User
+IamApiService --> AccessProfile
+IamApiService --> AuthSession
+
+User --> AccessProfile
+AuthSession --> User
+IamStore --> AuthSessionService
+
+' =========================
+' RELATIONSHIPS - MONITORING
+' =========================
+DashboardPageComponent --> MonitoringStore
+ReportPageComponent --> MonitoringStore
+
+MonitoringStore --> MonitoringFacade
+MonitoringFacade --> MonitoringApiService
+MonitoringApiService --> MonitoringSession
+MonitoringApiService --> Reading
+MonitoringApiService --> Anomaly
+MonitoringApiService --> Report
+
+MonitoringSession --> Reading
+Reading --> Anomaly
+Report --> Reading
+
+' =========================
+' RELATIONSHIPS - WORKSPACE
+' =========================
+SitePageComponent --> WorkspaceStore
+WorkspaceStore --> WorkspaceFacade
+WorkspaceFacade --> WorkspaceApiService
+WorkspaceApiService --> Workspace
+WorkspaceApiService --> Site
+WorkspaceApiService --> SiteMember
+WorkspaceApiService --> SiteDeviceAssignment
+
+Workspace --> Site
+Site --> SiteMember
+Site --> SiteDeviceAssignment
+SiteMember --> User
+SiteDeviceAssignment --> Device
+
+' =========================
+' RELATIONSHIPS - DEVICE CONTROL
+' =========================
+DevicePageComponent --> DeviceControlStore
+DeviceControlStore --> DeviceControlFacade
+DeviceControlFacade --> DeviceControlApiService
+
+DeviceControlApiService --> Device
+DeviceControlApiService --> Sensor
+DeviceControlApiService --> Valve
+DeviceControlApiService --> DeviceCommand
+
+Device --> Sensor
+Device --> Valve
+Device --> DeviceCommand
+Sensor --> Site
+Valve --> Device
+
+' =========================
+' RELATIONSHIPS - NOTIFICATION
+' =========================
+AlertPageComponent --> NotificationStore
+NotificationStore --> NotificationFacade
+NotificationFacade --> NotificationApiService
+
+NotificationApiService --> Alert
+NotificationApiService --> Threshold
+NotificationApiService --> Incident
+NotificationApiService --> NotificationChannel
+NotificationApiService --> AlertDelivery
+
+Alert --> Incident
+Alert --> AlertDelivery
+Threshold --> Sensor
+AlertDelivery --> NotificationChannel
+
+' =========================
+' RELATIONSHIPS - PLAN
+' =========================
+PlanPageComponent --> PlanStore
+PlanPageComponent --> PaymentFormComponent
+PlanStore --> PlanFacade
+PlanFacade --> PlanApiService
+
+PlanApiService --> Plan
+PlanApiService --> PlanFeature
+PlanApiService --> Subscription
+PlanApiService --> Payment
+PlanApiService --> ServiceRequest
+
+Plan --> PlanFeature
+Subscription --> Plan
+Subscription --> User
+Subscription --> Payment
+Subscription --> ServiceRequest
+
+' =========================
+' RELATIONSHIPS - SUPPORT
+' =========================
+SupportPageComponent --> SupportStore
+SupportStore --> SupportFacade
+SupportFacade --> SupportApiService
+
+SupportApiService --> SupportTicket
+SupportApiService --> SupportMessage
+SupportApiService --> SupportAgent
+SupportApiService --> SupportConversation
+SupportApiService --> KnowledgeArticle
+
+SupportTicket --> SupportMessage
+SupportTicket --> SupportConversation
+SupportTicket --> SupportAgent
+SupportTicket --> User
+SupportConversation --> SupportMessage
+
+' =========================
+' CROSS-CONTEXT DEPENDENCIES
+' =========================
+MonitoringStore ..> SubscriptionAccessService : validates access
+WorkspaceStore ..> SubscriptionAccessService : validates plan limits
+DeviceControlStore ..> SubscriptionAccessService : validates access
+NotificationStore ..> SubscriptionAccessService : validates access
+ReportPageComponent ..> Reading : uses monitored data
+Alert ..> Reading : created from anomaly/threshold
+SupportTicket ..> Device : may reference issue
+SupportTicket ..> Alert : may reference incident
+PaymentFormComponent ..> Payment : creates payment data
+
+@enduml

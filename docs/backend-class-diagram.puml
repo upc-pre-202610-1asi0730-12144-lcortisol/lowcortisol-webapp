@@ -1,0 +1,1948 @@
+@startuml
+title LowCortisol Platform - Backend Class Diagram C# ASP.NET Core
+
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam linetype ortho
+
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #1F2937
+  ArrowColor #1F2937
+}
+
+skinparam package {
+  BackgroundColor #F8FAFC
+  BorderColor #CBD5E1
+}
+
+skinparam note {
+  BackgroundColor #EFF6FF
+  BorderColor #60A5FA
+}
+
+' ==========================================================
+' SHARED
+' ==========================================================
+
+package "shared" {
+  package "domain" {
+    abstract class BaseEntity {
+      +Guid Id
+      +DateTime CreatedAt
+      +DateTime? UpdatedAt
+      +void SetCreatedAt()
+      +void SetUpdatedAt()
+    }
+
+    interface Repository<T> {
+      +Task<IEnumerable<T>> GetAllAsync()
+      +Task<T?> GetByIdAsync(Guid id)
+      +Task AddAsync(T entity)
+      +void Update(T entity)
+      +void Delete(T entity)
+    }
+
+    interface UnitOfWork {
+      +Task<int> CompleteAsync()
+    }
+  }
+
+  package "application" {
+    class ApiResponse<T> {
+      +bool Success
+      +string Message
+      +T Data
+      +IEnumerable<string> Error
+    }
+
+    class PageResult<T> {
+      +IEnumerable<T> Item
+      +int Page
+      +int PageSize
+      +int Total
+    }
+  }
+
+  package "infrastructure" {
+    class DateTimeProvider {
+      +DateTime UtcNow()
+    }
+
+    class LowCortisolDbContext {
+      +DbSet<User> User
+      +DbSet<AccessProfile> AccessProfile
+      +DbSet<Permission> Permission
+      +DbSet<AuthSession> AuthSession
+      +DbSet<Plan> Plan
+      +DbSet<PlanFeature> PlanFeature
+      +DbSet<Subscription> Subscription
+      +DbSet<Payment> Payment
+      +DbSet<ServiceRequest> ServiceRequest
+      +DbSet<Workplace> Workplace
+      +DbSet<Site> Site
+      +DbSet<SiteMember> SiteMember
+      +DbSet<SiteDeviceAssignment> SiteDeviceAssignment
+      +DbSet<Device> Device
+      +DbSet<Sensor> Sensor
+      +DbSet<Valve> Valve
+      +DbSet<DeviceCommand> DeviceCommand
+      +DbSet<MonitoringSession> MonitoringSession
+      +DbSet<Reading> Reading
+      +DbSet<Anomaly> Anomaly
+      +DbSet<Report> Report
+      +DbSet<Alert> Alert
+      +DbSet<Threshold> Threshold
+      +DbSet<Incident> Incident
+      +DbSet<NotificationChannel> NotificationChannel
+      +DbSet<AlertDelivery> AlertDelivery
+      +DbSet<SupportTicket> SupportTicket
+      +DbSet<SupportMessage> SupportMessage
+      +DbSet<SupportAgent> SupportAgent
+      +DbSet<SupportConversation> SupportConversation
+      +DbSet<KnowledgeArticle> KnowledgeArticle
+      +Task<int> SaveChangesAsync()
+    }
+
+    class EfUnitOfWork {
+      -LowCortisolDbContext context
+      +Task<int> CompleteAsync()
+    }
+  }
+}
+
+' ==========================================================
+' IAM
+' ==========================================================
+
+package "iam" {
+  package "domain" {
+    class User {
+      +Guid Id
+      +string FullName
+      +string Email
+      +string Phone
+      +string PasswordHash
+      +string Status
+      +Guid AccessProfileId
+      +void Activate()
+      +void Deactivate()
+      +void UpdateProfile(string fullName, string phone)
+    }
+
+    class AccessProfile {
+      +Guid Id
+      +string Name
+      +string Role
+      +ICollection<Permission> Permission
+      +bool HasPermission(string code)
+    }
+
+    class Permission {
+      +Guid Id
+      +string Code
+      +string Description
+    }
+
+    class AuthSession {
+      +Guid Id
+      +Guid UserId
+      +string Token
+      +string RefreshToken
+      +bool IsActive
+      +DateTime ExpiresAt
+      +void Revoke()
+      +bool IsExpired()
+    }
+
+    interface UserRepository {
+      +Task<User?> FindByEmailAsync(string email)
+      +Task<User?> FindByIdAsync(Guid id)
+      +Task AddAsync(User user)
+      +void Update(User user)
+    }
+
+    interface AccessProfileRepository {
+      +Task<AccessProfile?> FindByIdAsync(Guid id)
+      +Task<AccessProfile?> FindDefaultOwnerProfileAsync()
+    }
+
+    interface AuthSessionRepository {
+      +Task AddAsync(AuthSession session)
+      +Task<AuthSession?> FindActiveByTokenAsync(string token)
+      +void Update(AuthSession session)
+    }
+  }
+
+  package "application" {
+    class SignInCommand {
+      +string Email
+      +string Password
+    }
+
+    class SignUpCommand {
+      +string FullName
+      +string Email
+      +string Phone
+      +string Password
+    }
+
+    class RecoverPasswordCommand {
+      +string Email
+    }
+
+    class UpdateProfileCommand {
+      +Guid UserId
+      +string FullName
+      +string Phone
+    }
+
+    class UserDto {
+      +Guid Id
+      +string FullName
+      +string Email
+      +string Phone
+      +string Status
+      +Guid AccessProfileId
+    }
+
+    class AccessProfileDto {
+      +Guid Id
+      +string Name
+      +string Role
+      +IEnumerable<string> Permission
+    }
+
+    class AuthSessionDto {
+      +Guid Id
+      +Guid UserId
+      +string Token
+      +bool IsActive
+      +DateTime ExpiresAt
+    }
+
+    class AuthResult {
+      +UserDto User
+      +AccessProfileDto AccessProfile
+      +AuthSessionDto AuthSession
+    }
+
+    class AuthApplicationService {
+      -UserRepository userRepository
+      -AccessProfileRepository accessProfileRepository
+      -AuthSessionRepository authSessionRepository
+      -PasswordHashingService passwordHashingService
+      -TokenService tokenService
+      -UnitOfWork unitOfWork
+      +Task<AuthResult> SignInAsync(SignInCommand command)
+      +Task<AuthResult> SignUpAsync(SignUpCommand command)
+      +Task RecoverPasswordAsync(RecoverPasswordCommand command)
+      +Task SignOutAsync(string token)
+    }
+
+    class UserApplicationService {
+      -UserRepository userRepository
+      -UnitOfWork unitOfWork
+      +Task<UserDto> GetProfileAsync(Guid userId)
+      +Task<UserDto> UpdateProfileAsync(UpdateProfileCommand command)
+    }
+  }
+
+  package "infrastructure" {
+    interface PasswordHashingService {
+      +string Hash(string password)
+      +bool Verify(string password, string hash)
+    }
+
+    interface TokenService {
+      +string GenerateToken(User user)
+      +string GenerateRefreshToken()
+    }
+
+    class BcryptPasswordHashingService
+    class JwtTokenService
+    class EfUserRepository
+    class EfAccessProfileRepository
+    class EfAuthSessionRepository
+  }
+
+  package "interface" {
+    class AuthController {
+      +Task<IActionResult> SignIn(SignInCommand command)
+      +Task<IActionResult> SignUp(SignUpCommand command)
+      +Task<IActionResult> RecoverPassword(RecoverPasswordCommand command)
+      +Task<IActionResult> SignOut()
+    }
+
+    class UserController {
+      +Task<IActionResult> GetProfile()
+      +Task<IActionResult> UpdateProfile(UpdateProfileCommand command)
+    }
+
+    class AccessProfileController {
+      +Task<IActionResult> GetCurrentProfile()
+    }
+  }
+}
+
+' ==========================================================
+' PLAN
+' ==========================================================
+
+package "plan" {
+  package "domain" {
+    class Plan {
+      +Guid Id
+      +string Name
+      +string Code
+      +string Description
+      +decimal Price
+      +string Currency
+      +string BillingPeriod
+      +int MaxSite
+      +int MaxDevice
+      +bool Recommended
+      +ICollection<PlanFeature> Feature
+      +void AddFeature(PlanFeature feature)
+    }
+
+    class PlanFeature {
+      +Guid Id
+      +Guid PlanId
+      +string Name
+      +string Description
+      +bool Included
+    }
+
+    class Subscription {
+      +Guid Id
+      +Guid UserId
+      +Guid WorkplaceId
+      +Guid PlanId
+      +string Status
+      +DateTime StartedAt
+      +DateTime? ExpiresAt
+      +bool AutoRenew
+      +void Activate()
+      +void Cancel()
+      +void ChangePlan(Guid newPlanId)
+    }
+
+    class Payment {
+      +Guid Id
+      +Guid SubscriptionId
+      +decimal Amount
+      +string Currency
+      +string Method
+      +string Status
+      +DateTime? PaidAt
+      +void MarkAsPaid()
+      +void MarkAsFailed()
+    }
+
+    class ServiceRequest {
+      +Guid Id
+      +Guid SubscriptionId
+      +string Type
+      +string Description
+      +string Status
+      +void Resolve()
+      +void Close()
+    }
+
+    class SubscriptionPolicyService {
+      +bool CanChangePlan(Subscription subscription)
+      +bool CanCancel(Subscription subscription)
+      +bool RequiresPayment(Plan plan)
+    }
+
+    interface PlanRepository {
+      +Task<IEnumerable<Plan>> GetAllAsync()
+      +Task<Plan?> GetByIdAsync(Guid id)
+    }
+
+    interface SubscriptionRepository {
+      +Task<Subscription?> FindActiveByUserIdAsync(Guid userId)
+      +Task<IEnumerable<Subscription>> FindByUserIdAsync(Guid userId)
+      +Task AddAsync(Subscription subscription)
+      +void Update(Subscription subscription)
+    }
+
+    interface PaymentRepository {
+      +Task<IEnumerable<Payment>> FindBySubscriptionIdAsync(Guid subscriptionId)
+      +Task AddAsync(Payment payment)
+    }
+
+    interface ServiceRequestRepository {
+      +Task<IEnumerable<ServiceRequest>> FindBySubscriptionIdAsync(Guid subscriptionId)
+      +Task AddAsync(ServiceRequest request)
+    }
+  }
+
+  package "application" {
+    class SubscribeCommand {
+      +Guid UserId
+      +Guid WorkplaceId
+      +Guid PlanId
+      +string PaymentMethod
+    }
+
+    class ChangePlanCommand {
+      +Guid UserId
+      +Guid NewPlanId
+    }
+
+    class CancelSubscriptionCommand {
+      +Guid UserId
+      +string Reason
+    }
+
+    class PlanDto {
+      +Guid Id
+      +string Name
+      +string Code
+      +decimal Price
+      +string Currency
+      +int MaxSite
+      +int MaxDevice
+      +bool Recommended
+      +IEnumerable<PlanFeatureDto> Feature
+    }
+
+    class PlanFeatureDto {
+      +Guid Id
+      +string Name
+      +string Description
+      +bool Included
+    }
+
+    class SubscriptionDto {
+      +Guid Id
+      +Guid UserId
+      +Guid WorkplaceId
+      +Guid PlanId
+      +string Status
+      +bool AutoRenew
+    }
+
+    class PaymentDto {
+      +Guid Id
+      +Guid SubscriptionId
+      +decimal Amount
+      +string Currency
+      +string Method
+      +string Status
+      +DateTime? PaidAt
+    }
+
+    class ServiceRequestDto {
+      +Guid Id
+      +Guid SubscriptionId
+      +string Type
+      +string Description
+      +string Status
+    }
+
+    class PlanSummaryDto {
+      +int TotalPlan
+      +string ActivePlanName
+      +string SubscriptionStatus
+      +decimal TotalPaid
+      +int MaxSite
+      +int MaxDevice
+    }
+
+    class PlanApplicationService {
+      -PlanRepository planRepository
+      -SubscriptionRepository subscriptionRepository
+      -PaymentRepository paymentRepository
+      -ServiceRequestRepository serviceRequestRepository
+      -SubscriptionPolicyService subscriptionPolicyService
+      -UnitOfWork unitOfWork
+      +Task<IEnumerable<PlanDto>> GetPlanAsync()
+      +Task<PlanDto> GetPlanByIdAsync(Guid id)
+      +Task<SubscriptionDto?> GetActiveSubscriptionAsync(Guid userId)
+      +Task<SubscriptionDto> SubscribeAsync(SubscribeCommand command)
+      +Task<SubscriptionDto> ChangePlanAsync(ChangePlanCommand command)
+      +Task<SubscriptionDto> CancelSubscriptionAsync(CancelSubscriptionCommand command)
+      +Task<PlanSummaryDto> GetSummaryAsync(Guid userId)
+    }
+  }
+
+  package "infrastructure" {
+    class EfPlanRepository
+    class EfSubscriptionRepository
+    class EfPaymentRepository
+    class EfServiceRequestRepository
+  }
+
+  package "interface" {
+    class PlanController {
+      +Task<IActionResult> GetPlan()
+      +Task<IActionResult> GetPlanById(Guid id)
+    }
+
+    class SubscriptionController {
+      +Task<IActionResult> GetActive()
+      +Task<IActionResult> Subscribe(SubscribeCommand command)
+      +Task<IActionResult> ChangePlan(ChangePlanCommand command)
+      +Task<IActionResult> Cancel(CancelSubscriptionCommand command)
+    }
+
+    class PaymentController {
+      +Task<IActionResult> GetPayment()
+    }
+  }
+}
+
+' ==========================================================
+' WORKPLACE
+' ==========================================================
+
+package "workplace" {
+  package "domain" {
+    class Workplace {
+      +Guid Id
+      +Guid OwnerId
+      +string Name
+      +string Description
+      +ICollection<Site> Site
+      +void Rename(string name)
+    }
+
+    class Site {
+      +Guid Id
+      +Guid WorkplaceId
+      +string Name
+      +string Address
+      +string Type
+      +string Status
+      +decimal WaterConsumption
+      +decimal GasConsumption
+      +int ActiveSensor
+      +int ActiveIncident
+      +void Activate()
+      +void SetMaintenance()
+      +void UpdateConsumption(decimal water, decimal gas)
+    }
+
+    class SiteMember {
+      +Guid Id
+      +Guid SiteId
+      +Guid UserId
+      +string FullName
+      +string Email
+      +string Role
+      +void ChangeRole(string role)
+    }
+
+    class SiteDeviceAssignment {
+      +Guid Id
+      +Guid SiteId
+      +Guid DeviceId
+      +string DeviceName
+      +string DeviceType
+      +string Status
+      +void Activate()
+      +void Deactivate()
+    }
+
+    interface WorkplaceRepository {
+      +Task<Workplace?> FindByOwnerIdAsync(Guid ownerId)
+      +Task<Workplace?> FindByIdAsync(Guid id)
+      +Task AddAsync(Workplace workplace)
+      +void Update(Workplace workplace)
+    }
+
+    interface SiteRepository {
+      +Task<IEnumerable<Site>> FindByWorkplaceIdAsync(Guid workplaceId)
+      +Task<Site?> FindByIdAsync(Guid siteId)
+      +Task AddAsync(Site site)
+      +void Update(Site site)
+      +void Delete(Site site)
+    }
+
+    interface SiteMemberRepository {
+      +Task<IEnumerable<SiteMember>> FindBySiteIdAsync(Guid siteId)
+      +Task AddAsync(SiteMember member)
+    }
+
+    interface SiteDeviceAssignmentRepository {
+      +Task<IEnumerable<SiteDeviceAssignment>> FindBySiteIdAsync(Guid siteId)
+      +Task AddAsync(SiteDeviceAssignment assignment)
+    }
+  }
+
+  package "application" {
+    class CreateSiteCommand {
+      +Guid WorkplaceId
+      +string Name
+      +string Address
+      +string Type
+    }
+
+    class AssignMemberToSiteCommand {
+      +Guid SiteId
+      +Guid UserId
+      +string FullName
+      +string Email
+      +string Role
+    }
+
+    class AssignDeviceToSiteCommand {
+      +Guid SiteId
+      +Guid DeviceId
+      +string DeviceName
+      +string DeviceType
+    }
+
+    class WorkplaceDto {
+      +Guid Id
+      +Guid OwnerId
+      +string Name
+      +string Description
+    }
+
+    class SiteDto {
+      +Guid Id
+      +Guid WorkplaceId
+      +string Name
+      +string Address
+      +string Type
+      +string Status
+      +decimal WaterConsumption
+      +decimal GasConsumption
+      +int ActiveSensor
+      +int ActiveIncident
+    }
+
+    class SiteMemberDto {
+      +Guid Id
+      +Guid SiteId
+      +Guid UserId
+      +string FullName
+      +string Email
+      +string Role
+    }
+
+    class SiteDeviceAssignmentDto {
+      +Guid Id
+      +Guid SiteId
+      +Guid DeviceId
+      +string DeviceName
+      +string DeviceType
+      +string Status
+    }
+
+    class WorkplaceSummaryDto {
+      +int TotalSite
+      +int ActiveSite
+      +int MaintenanceSite
+      +int TotalMember
+      +int TotalDeviceAssignment
+      +decimal WaterConsumption
+      +decimal GasConsumption
+    }
+
+    class WorkplaceApplicationService {
+      -WorkplaceRepository workplaceRepository
+      -SiteRepository siteRepository
+      -SiteMemberRepository siteMemberRepository
+      -SiteDeviceAssignmentRepository siteDeviceAssignmentRepository
+      -UnitOfWork unitOfWork
+      +Task<WorkplaceDto?> GetWorkplaceAsync(Guid ownerId)
+      +Task<IEnumerable<SiteDto>> GetSiteAsync(Guid workplaceId, string type)
+      +Task<SiteDto> CreateSiteAsync(CreateSiteCommand command)
+      +Task AssignMemberToSiteAsync(AssignMemberToSiteCommand command)
+      +Task AssignDeviceToSiteAsync(AssignDeviceToSiteCommand command)
+      +Task<WorkplaceSummaryDto> GetSummaryAsync(Guid workplaceId)
+    }
+  }
+
+  package "infrastructure" {
+    class EfWorkplaceRepository
+    class EfSiteRepository
+    class EfSiteMemberRepository
+    class EfSiteDeviceAssignmentRepository
+  }
+
+  package "interface" {
+    class WorkplaceController {
+      +Task<IActionResult> GetCurrentWorkplace()
+      +Task<IActionResult> GetSummary()
+    }
+
+    class SiteController {
+      +Task<IActionResult> GetSite(string type)
+      +Task<IActionResult> GetSiteById(Guid id)
+      +Task<IActionResult> CreateSite(CreateSiteCommand command)
+      +Task<IActionResult> DeleteSite(Guid id)
+    }
+
+    class SiteMemberController {
+      +Task<IActionResult> GetMemberBySite(Guid siteId)
+      +Task<IActionResult> AssignMember(AssignMemberToSiteCommand command)
+    }
+
+    class SiteDeviceAssignmentController {
+      +Task<IActionResult> GetAssignmentBySite(Guid siteId)
+      +Task<IActionResult> AssignDevice(AssignDeviceToSiteCommand command)
+    }
+  }
+}
+
+' ==========================================================
+' DEVICE CONTROL
+' ==========================================================
+
+package "device-control" {
+  package "domain" {
+    class Device {
+      +Guid Id
+      +Guid SiteId
+      +string Name
+      +string Type
+      +string Status
+      +ICollection<Sensor> Sensor
+      +ICollection<Valve> Valve
+      +ICollection<DeviceCommand> Command
+      +bool IsOnline()
+      +void SetOnline()
+      +void SetOffline()
+    }
+
+    class Sensor {
+      +Guid Id
+      +Guid DeviceId
+      +Guid SiteId
+      +string Name
+      +string ResourceType
+      +decimal CurrentValue
+      +string Unit
+      +decimal Threshold
+      +string Status
+      +bool HasExceededThreshold()
+      +void UpdateReading(decimal value)
+    }
+
+    class Valve {
+      +Guid Id
+      +Guid DeviceId
+      +Guid SiteId
+      +string Name
+      +string ResourceType
+      +string Status
+      +int OpeningPercentage
+      +void Open()
+      +void Close()
+    }
+
+    class DeviceCommand {
+      +Guid Id
+      +Guid DeviceId
+      +string CommandType
+      +string Status
+      +void MarkExecuted()
+      +void MarkFailed()
+    }
+
+    interface DeviceRepository {
+      +Task<IEnumerable<Device>> GetAllAsync()
+      +Task<Device?> FindByIdAsync(Guid id)
+      +Task<IEnumerable<Device>> FindBySiteIdAsync(Guid siteId)
+      +Task AddAsync(Device device)
+      +void Update(Device device)
+    }
+
+    interface SensorRepository {
+      +Task<IEnumerable<Sensor>> FindByDeviceIdAsync(Guid deviceId)
+      +Task AddAsync(Sensor sensor)
+      +void Update(Sensor sensor)
+    }
+
+    interface ValveRepository {
+      +Task<Valve?> FindByIdAsync(Guid id)
+      +Task<IEnumerable<Valve>> FindByDeviceIdAsync(Guid deviceId)
+      +void Update(Valve valve)
+    }
+
+    interface DeviceCommandRepository {
+      +Task<IEnumerable<DeviceCommand>> FindByDeviceIdAsync(Guid deviceId)
+      +Task AddAsync(DeviceCommand command)
+    }
+  }
+
+  package "application" {
+    class CreateDeviceCommand {
+      +Guid SiteId
+      +string Name
+      +string Type
+    }
+
+    class LinkSensorCommand {
+      +Guid DeviceId
+      +Guid SiteId
+      +string Name
+      +string ResourceType
+      +string Unit
+      +decimal Threshold
+    }
+
+    class ExecuteDeviceCommand {
+      +Guid DeviceId
+      +string CommandType
+    }
+
+    class DeviceDto {
+      +Guid Id
+      +Guid SiteId
+      +string Name
+      +string Type
+      +string Status
+      +IEnumerable<SensorDto> Sensor
+      +IEnumerable<ValveDto> Valve
+      +IEnumerable<DeviceCommandDto> Command
+    }
+
+    class SensorDto {
+      +Guid Id
+      +string Name
+      +string ResourceType
+      +decimal CurrentValue
+      +string Unit
+      +decimal Threshold
+      +bool HasExceededThreshold
+    }
+
+    class ValveDto {
+      +Guid Id
+      +string Name
+      +string ResourceType
+      +string Status
+      +int OpeningPercentage
+      +bool IsOpen
+    }
+
+    class DeviceCommandDto {
+      +Guid Id
+      +Guid DeviceId
+      +string CommandType
+      +string Status
+    }
+
+    class DeviceControlSummaryDto {
+      +int TotalDevice
+      +int ActiveSensor
+      +int ClosedValve
+      +int TotalSensor
+      +int TotalValve
+      +int TotalCommand
+    }
+
+    class DeviceControlApplicationService {
+      -DeviceRepository deviceRepository
+      -SensorRepository sensorRepository
+      -ValveRepository valveRepository
+      -DeviceCommandRepository commandRepository
+      -UnitOfWork unitOfWork
+      +Task<IEnumerable<DeviceDto>> GetDeviceAsync()
+      +Task<DeviceDto> CreateDeviceAsync(CreateDeviceCommand command)
+      +Task<SensorDto> LinkSensorAsync(LinkSensorCommand command)
+      +Task<ValveDto> OpenValveAsync(Guid valveId)
+      +Task<ValveDto> CloseValveAsync(Guid valveId)
+      +Task<DeviceCommandDto> ExecuteCommandAsync(ExecuteDeviceCommand command)
+      +Task<DeviceControlSummaryDto> GetSummaryAsync()
+    }
+  }
+
+  package "infrastructure" {
+    class EfDeviceRepository
+    class EfSensorRepository
+    class EfValveRepository
+    class EfDeviceCommandRepository
+  }
+
+  package "interface" {
+    class DeviceController {
+      +Task<IActionResult> GetDevice()
+      +Task<IActionResult> CreateDevice(CreateDeviceCommand command)
+    }
+
+    class SensorController {
+      +Task<IActionResult> LinkSensor(LinkSensorCommand command)
+    }
+
+    class ValveController {
+      +Task<IActionResult> OpenValve(Guid id)
+      +Task<IActionResult> CloseValve(Guid id)
+    }
+
+    class DeviceCommandController {
+      +Task<IActionResult> ExecuteCommand(ExecuteDeviceCommand command)
+      +Task<IActionResult> GetCommand(Guid deviceId)
+    }
+  }
+}
+
+' ==========================================================
+' MONITORING
+' ==========================================================
+
+package "monitoring" {
+  package "domain" {
+    class MonitoringSession {
+      +Guid Id
+      +bool IsActive
+      +int TotalReading
+      +int TotalAnomaly
+      +DateTime StartedAt
+      +DateTime? FinishedAt
+      +void AddReading()
+      +void AddAnomaly()
+      +void Finish()
+    }
+
+    class Reading {
+      +Guid Id
+      +Guid MonitoringSessionId
+      +Guid SensorId
+      +Guid SiteId
+      +string ResourceType
+      +decimal Value
+      +string Unit
+      +string Status
+      +DateTime MeasuredAt
+      +bool IsCritical()
+    }
+
+    class Anomaly {
+      +Guid Id
+      +Guid ReadingId
+      +Guid SiteId
+      +string Severity
+      +string Description
+      +string Status
+      +void Resolve()
+      +void Close()
+    }
+
+    class Report {
+      +Guid Id
+      +Guid SiteId
+      +string Period
+      +decimal TotalWater
+      +decimal TotalGas
+      +int AnomalyCount
+      +DateTime GeneratedAt
+    }
+
+    class AnomalyDetectionService {
+      +Anomaly? DetectFromReading(Reading reading)
+    }
+
+    interface MonitoringSessionRepository {
+      +Task<MonitoringSession?> FindActiveAsync()
+      +Task AddAsync(MonitoringSession session)
+      +void Update(MonitoringSession session)
+    }
+
+    interface ReadingRepository {
+      +Task<IEnumerable<Reading>> GetAllAsync()
+      +Task AddAsync(Reading reading)
+    }
+
+    interface AnomalyRepository {
+      +Task<IEnumerable<Anomaly>> GetAllAsync()
+      +Task AddAsync(Anomaly anomaly)
+    }
+
+    interface ReportRepository {
+      +Task<IEnumerable<Report>> GetAllAsync()
+      +Task AddAsync(Report report)
+    }
+  }
+
+  package "application" {
+    class CreateReadingCommand {
+      +Guid SensorId
+      +Guid SiteId
+      +string ResourceType
+      +decimal Value
+      +string Unit
+    }
+
+    class CreateReportCommand {
+      +Guid SiteId
+      +string Period
+    }
+
+    class MonitoringSummaryDto {
+      +decimal TotalWater
+      +decimal TotalGas
+      +int CriticalAnomaly
+    }
+
+    class MonitoringApplicationService {
+      -MonitoringSessionRepository monitoringSessionRepository
+      -ReadingRepository readingRepository
+      -AnomalyRepository anomalyRepository
+      -ReportRepository reportRepository
+      -AnomalyDetectionService anomalyDetectionService
+      -UnitOfWork unitOfWork
+      +Task<MonitoringSummaryDto> GetSummaryAsync()
+      +Task<MonitoringSession> GetActiveSessionAsync()
+      +Task<IEnumerable<Reading>> GetReadingAsync()
+      +Task<Reading> CreateReadingAsync(CreateReadingCommand command)
+      +Task<IEnumerable<Anomaly>> GetAnomalyAsync()
+      +Task<Report> CreateReportAsync(CreateReportCommand command)
+    }
+  }
+
+  package "infrastructure" {
+    class EfMonitoringSessionRepository
+    class EfReadingRepository
+    class EfAnomalyRepository
+    class EfReportRepository
+  }
+
+  package "interface" {
+    class MonitoringController {
+      +Task<IActionResult> GetSummary()
+      +Task<IActionResult> GetActiveSession()
+    }
+
+    class ReadingController {
+      +Task<IActionResult> GetReading()
+      +Task<IActionResult> CreateReading(CreateReadingCommand command)
+    }
+
+    class ReportController {
+      +Task<IActionResult> GetReport()
+      +Task<IActionResult> CreateReport(CreateReportCommand command)
+    }
+  }
+}
+
+' ==========================================================
+' NOTIFICATION
+' ==========================================================
+
+package "notification" {
+  package "domain" {
+    class Alert {
+      +Guid Id
+      +Guid SiteId
+      +Guid SensorId
+      +string ResourceType
+      +string Title
+      +string Description
+      +string Severity
+      +string Status
+      +void Resolve()
+      +void Close()
+    }
+
+    class Threshold {
+      +Guid Id
+      +Guid SiteId
+      +Guid SensorId
+      +string ResourceType
+      +decimal WarningLimit
+      +decimal CriticalLimit
+      +string Unit
+      +bool Enabled
+      +void Enable()
+      +void Disable()
+    }
+
+    class Incident {
+      +Guid Id
+      +Guid AlertId
+      +Guid SiteId
+      +string Title
+      +string Description
+      +string Priority
+      +string Status
+      +Guid? AssignedTo
+      +void AssignTo(Guid userId)
+      +void Resolve()
+      +void Close()
+    }
+
+    class NotificationChannel {
+      +Guid Id
+      +string Name
+      +string Type
+      +string Destination
+      +bool Enabled
+      +void Enable()
+      +void Disable()
+    }
+
+    class AlertDelivery {
+      +Guid Id
+      +Guid AlertId
+      +Guid ChannelId
+      +string Status
+      +DateTime? SentAt
+      +void MarkSent()
+      +void MarkFailed()
+    }
+
+    class AlertPolicyService {
+      +Incident? CreateIncidentIfRequired(Alert alert)
+    }
+
+    interface AlertRepository {
+      +Task<IEnumerable<Alert>> GetAllAsync()
+      +Task<Alert?> FindByIdAsync(Guid id)
+      +Task AddAsync(Alert alert)
+      +void Update(Alert alert)
+    }
+
+    interface ThresholdRepository {
+      +Task<IEnumerable<Threshold>> GetAllAsync()
+      +Task AddAsync(Threshold threshold)
+    }
+
+    interface IncidentRepository {
+      +Task<IEnumerable<Incident>> GetAllAsync()
+      +Task AddAsync(Incident incident)
+      +void Update(Incident incident)
+    }
+
+    interface NotificationChannelRepository {
+      +Task<IEnumerable<NotificationChannel>> GetEnabledAsync()
+    }
+
+    interface AlertDeliveryRepository {
+      +Task<IEnumerable<AlertDelivery>> GetAllAsync()
+      +Task AddAsync(AlertDelivery delivery)
+    }
+  }
+
+  package "application" {
+    class CreateAlertCommand {
+      +Guid SiteId
+      +Guid SensorId
+      +string ResourceType
+      +string Title
+      +string Description
+      +string Severity
+    }
+
+    class CreateThresholdCommand {
+      +Guid SiteId
+      +Guid SensorId
+      +string ResourceType
+      +decimal WarningLimit
+      +decimal CriticalLimit
+      +string Unit
+    }
+
+    class NotificationSummaryDto {
+      +int TotalAlert
+      +int CriticalAlert
+      +int OpenIncident
+      +int ActiveThreshold
+      +int ChannelEnabled
+      +int DeliverySent
+    }
+
+    class NotificationApplicationService {
+      -AlertRepository alertRepository
+      -ThresholdRepository thresholdRepository
+      -IncidentRepository incidentRepository
+      -NotificationChannelRepository notificationChannelRepository
+      -AlertDeliveryRepository alertDeliveryRepository
+      -AlertPolicyService alertPolicyService
+      -UnitOfWork unitOfWork
+      +Task<IEnumerable<Alert>> GetAlertAsync()
+      +Task<Alert> CreateAlertAsync(CreateAlertCommand command)
+      +Task<Alert> ResolveAlertAsync(Guid alertId)
+      +Task<Alert> CloseAlertAsync(Guid alertId)
+      +Task<Threshold> CreateThresholdAsync(CreateThresholdCommand command)
+      +Task<IEnumerable<AlertDelivery>> SendAlertAsync(Guid alertId)
+      +Task<NotificationSummaryDto> GetSummaryAsync()
+    }
+  }
+
+  package "infrastructure" {
+    class EfAlertRepository
+    class EfThresholdRepository
+    class EfIncidentRepository
+    class EfNotificationChannelRepository
+    class EfAlertDeliveryRepository
+  }
+
+  package "interface" {
+    class AlertController {
+      +Task<IActionResult> GetAlert()
+      +Task<IActionResult> CreateAlert(CreateAlertCommand command)
+      +Task<IActionResult> ResolveAlert(Guid id)
+      +Task<IActionResult> CloseAlert(Guid id)
+      +Task<IActionResult> SendAlert(Guid id)
+    }
+
+    class ThresholdController {
+      +Task<IActionResult> GetThreshold()
+      +Task<IActionResult> CreateThreshold(CreateThresholdCommand command)
+    }
+
+    class IncidentController {
+      +Task<IActionResult> GetIncident()
+    }
+  }
+}
+
+' ==========================================================
+' SUPPORT
+' ==========================================================
+
+package "support" {
+  package "domain" {
+    class SupportTicket {
+      +Guid Id
+      +Guid UserId
+      +Guid SiteId
+      +string Title
+      +string Description
+      +string Category
+      +string Priority
+      +string Status
+      +Guid? AssignedAgentId
+      +void AssignTo(Guid agentId)
+      +void Resolve()
+      +void Close()
+    }
+
+    class SupportMessage {
+      +Guid Id
+      +Guid TicketId
+      +Guid SenderId
+      +string SenderType
+      +string Content
+      +string Status
+      +void MarkAsRead()
+    }
+
+    class SupportAgent {
+      +Guid Id
+      +string FullName
+      +string Email
+      +string Specialty
+      +string Status
+      +void SetAvailable()
+      +void SetBusy()
+    }
+
+    class SupportConversation {
+      +Guid Id
+      +Guid TicketId
+      +string Status
+      +void Close()
+    }
+
+    class KnowledgeArticle {
+      +Guid Id
+      +string Title
+      +string Summary
+      +string Category
+      +string Content
+      +int HelpfulCount
+      +void MarkHelpful()
+    }
+
+    class SupportPriorityService {
+      +string ResolvePriority(string category)
+      +bool ShouldAssignImmediately(SupportTicket ticket)
+    }
+
+    interface SupportTicketRepository {
+      +Task<IEnumerable<SupportTicket>> GetAllAsync()
+      +Task<SupportTicket?> FindByIdAsync(Guid id)
+      +Task AddAsync(SupportTicket ticket)
+      +void Update(SupportTicket ticket)
+    }
+
+    interface SupportMessageRepository {
+      +Task<IEnumerable<SupportMessage>> FindByTicketIdAsync(Guid ticketId)
+      +Task AddAsync(SupportMessage message)
+    }
+
+    interface SupportAgentRepository {
+      +Task<IEnumerable<SupportAgent>> GetAllAsync()
+      +Task<SupportAgent?> FindAvailableBySpecialtyAsync(string specialty)
+      +void Update(SupportAgent agent)
+    }
+
+    interface KnowledgeArticleRepository {
+      +Task<IEnumerable<KnowledgeArticle>> GetAllAsync()
+    }
+  }
+
+  package "application" {
+    class CreateSupportTicketCommand {
+      +Guid UserId
+      +Guid SiteId
+      +string Title
+      +string Description
+      +string Category
+    }
+
+    class SendSupportMessageCommand {
+      +Guid TicketId
+      +Guid SenderId
+      +string SenderType
+      +string Content
+    }
+
+    class SupportSummaryDto {
+      +int TotalTicket
+      +int OpenTicket
+      +int AssignedTicket
+      +int ResolvedTicket
+      +int AvailableAgent
+      +int TotalArticle
+    }
+
+    class SupportApplicationService {
+      -SupportTicketRepository supportTicketRepository
+      -SupportMessageRepository supportMessageRepository
+      -SupportAgentRepository supportAgentRepository
+      -KnowledgeArticleRepository knowledgeArticleRepository
+      -SupportPriorityService supportPriorityService
+      -UnitOfWork unitOfWork
+      +Task<IEnumerable<SupportTicket>> GetTicketAsync()
+      +Task<SupportTicket> CreateTicketAsync(CreateSupportTicketCommand command)
+      +Task<SupportTicket> ResolveTicketAsync(Guid ticketId)
+      +Task<SupportTicket> CloseTicketAsync(Guid ticketId)
+      +Task<SupportMessage> SendMessageAsync(SendSupportMessageCommand command)
+      +Task<IEnumerable<SupportAgent>> GetAgentAsync()
+      +Task<IEnumerable<KnowledgeArticle>> GetArticleAsync()
+      +Task<SupportSummaryDto> GetSummaryAsync()
+    }
+  }
+
+  package "infrastructure" {
+    class EfSupportTicketRepository
+    class EfSupportMessageRepository
+    class EfSupportAgentRepository
+    class EfKnowledgeArticleRepository
+  }
+
+  package "interface" {
+    class SupportTicketController {
+      +Task<IActionResult> GetTicket()
+      +Task<IActionResult> CreateTicket(CreateSupportTicketCommand command)
+      +Task<IActionResult> ResolveTicket(Guid id)
+      +Task<IActionResult> CloseTicket(Guid id)
+    }
+
+    class SupportMessageController {
+      +Task<IActionResult> SendMessage(SendSupportMessageCommand command)
+    }
+
+    class KnowledgeArticleController {
+      +Task<IActionResult> GetArticle()
+    }
+  }
+}
+
+' ==========================================================
+' INHERITANCE
+' ==========================================================
+
+BaseEntity <|-- User
+BaseEntity <|-- AccessProfile
+BaseEntity <|-- Permission
+BaseEntity <|-- AuthSession
+BaseEntity <|-- Plan
+BaseEntity <|-- PlanFeature
+BaseEntity <|-- Subscription
+BaseEntity <|-- Payment
+BaseEntity <|-- ServiceRequest
+BaseEntity <|-- Workplace
+BaseEntity <|-- Site
+BaseEntity <|-- SiteMember
+BaseEntity <|-- SiteDeviceAssignment
+BaseEntity <|-- Device
+BaseEntity <|-- Sensor
+BaseEntity <|-- Valve
+BaseEntity <|-- DeviceCommand
+BaseEntity <|-- MonitoringSession
+BaseEntity <|-- Reading
+BaseEntity <|-- Anomaly
+BaseEntity <|-- Report
+BaseEntity <|-- Alert
+BaseEntity <|-- Threshold
+BaseEntity <|-- Incident
+BaseEntity <|-- NotificationChannel
+BaseEntity <|-- AlertDelivery
+BaseEntity <|-- SupportTicket
+BaseEntity <|-- SupportMessage
+BaseEntity <|-- SupportAgent
+BaseEntity <|-- SupportConversation
+BaseEntity <|-- KnowledgeArticle
+
+' ==========================================================
+' IAM RELATION
+' ==========================================================
+
+User --> AccessProfile : accessProfileId
+AccessProfile "1" o-- "*" Permission
+AuthSession --> User : userId
+
+AuthApplicationService --> UserRepository
+AuthApplicationService --> AccessProfileRepository
+AuthApplicationService --> AuthSessionRepository
+AuthApplicationService --> PasswordHashingService
+AuthApplicationService --> TokenService
+AuthApplicationService --> UnitOfWork
+
+UserApplicationService --> UserRepository
+UserApplicationService --> UnitOfWork
+
+UserRepository <|.. EfUserRepository
+AccessProfileRepository <|.. EfAccessProfileRepository
+AuthSessionRepository <|.. EfAuthSessionRepository
+PasswordHashingService <|.. BcryptPasswordHashingService
+TokenService <|.. JwtTokenService
+
+AuthController --> AuthApplicationService
+UserController --> UserApplicationService
+AccessProfileController --> AuthApplicationService
+
+' ==========================================================
+' PLAN RELATION
+' ==========================================================
+
+Plan "1" o-- "*" PlanFeature
+Subscription --> User : userId
+Subscription --> Workplace : workplaceId
+Subscription --> Plan : planId
+Payment --> Subscription : subscriptionId
+ServiceRequest --> Subscription : subscriptionId
+
+PlanApplicationService --> PlanRepository
+PlanApplicationService --> SubscriptionRepository
+PlanApplicationService --> PaymentRepository
+PlanApplicationService --> ServiceRequestRepository
+PlanApplicationService --> SubscriptionPolicyService
+PlanApplicationService --> UnitOfWork
+
+PlanRepository <|.. EfPlanRepository
+SubscriptionRepository <|.. EfSubscriptionRepository
+PaymentRepository <|.. EfPaymentRepository
+ServiceRequestRepository <|.. EfServiceRequestRepository
+
+PlanController --> PlanApplicationService
+SubscriptionController --> PlanApplicationService
+PaymentController --> PlanApplicationService
+
+' ==========================================================
+' WORKPLACE RELATION
+' ==========================================================
+
+Workplace --> User : ownerId
+Workplace "1" o-- "*" Site
+Site "1" o-- "*" SiteMember
+Site "1" o-- "*" SiteDeviceAssignment
+SiteMember --> User : userId
+SiteDeviceAssignment --> Device : deviceId
+
+WorkplaceApplicationService --> WorkplaceRepository
+WorkplaceApplicationService --> SiteRepository
+WorkplaceApplicationService --> SiteMemberRepository
+WorkplaceApplicationService --> SiteDeviceAssignmentRepository
+WorkplaceApplicationService --> UnitOfWork
+
+WorkplaceRepository <|.. EfWorkplaceRepository
+SiteRepository <|.. EfSiteRepository
+SiteMemberRepository <|.. EfSiteMemberRepository
+SiteDeviceAssignmentRepository <|.. EfSiteDeviceAssignmentRepository
+
+WorkplaceController --> WorkplaceApplicationService
+SiteController --> WorkplaceApplicationService
+SiteMemberController --> WorkplaceApplicationService
+SiteDeviceAssignmentController --> WorkplaceApplicationService
+
+' ==========================================================
+' DEVICE CONTROL RELATION
+' ==========================================================
+
+Site "1" o-- "*" Device
+Device "1" o-- "*" Sensor
+Device "1" o-- "*" Valve
+Device "1" o-- "*" DeviceCommand
+Sensor --> Site : siteId
+Valve --> Site : siteId
+
+DeviceControlApplicationService --> DeviceRepository
+DeviceControlApplicationService --> SensorRepository
+DeviceControlApplicationService --> ValveRepository
+DeviceControlApplicationService --> DeviceCommandRepository
+DeviceControlApplicationService --> UnitOfWork
+
+DeviceRepository <|.. EfDeviceRepository
+SensorRepository <|.. EfSensorRepository
+ValveRepository <|.. EfValveRepository
+DeviceCommandRepository <|.. EfDeviceCommandRepository
+
+DeviceController --> DeviceControlApplicationService
+SensorController --> DeviceControlApplicationService
+ValveController --> DeviceControlApplicationService
+DeviceCommandController --> DeviceControlApplicationService
+
+' ==========================================================
+' MONITORING RELATION
+' ==========================================================
+
+MonitoringSession "1" o-- "*" Reading
+Reading --> Sensor : sensorId
+Reading --> Site : siteId
+Reading "1" --> "0..1" Anomaly : readingId
+Anomaly --> Site : siteId
+Report --> Site : siteId
+
+MonitoringApplicationService --> MonitoringSessionRepository
+MonitoringApplicationService --> ReadingRepository
+MonitoringApplicationService --> AnomalyRepository
+MonitoringApplicationService --> ReportRepository
+MonitoringApplicationService --> AnomalyDetectionService
+MonitoringApplicationService --> UnitOfWork
+
+MonitoringSessionRepository <|.. EfMonitoringSessionRepository
+ReadingRepository <|.. EfReadingRepository
+AnomalyRepository <|.. EfAnomalyRepository
+ReportRepository <|.. EfReportRepository
+
+MonitoringController --> MonitoringApplicationService
+ReadingController --> MonitoringApplicationService
+ReportController --> MonitoringApplicationService
+
+' ==========================================================
+' NOTIFICATION RELATION
+' ==========================================================
+
+Alert --> Site : siteId
+Alert --> Sensor : sensorId
+Threshold --> Site : siteId
+Threshold --> Sensor : sensorId
+Alert "1" --> "0..*" Incident
+Alert "1" --> "0..*" AlertDelivery
+Incident --> Site : siteId
+AlertDelivery --> NotificationChannel : channelId
+
+NotificationApplicationService --> AlertRepository
+NotificationApplicationService --> ThresholdRepository
+NotificationApplicationService --> IncidentRepository
+NotificationApplicationService --> NotificationChannelRepository
+NotificationApplicationService --> AlertDeliveryRepository
+NotificationApplicationService --> AlertPolicyService
+NotificationApplicationService --> UnitOfWork
+
+AlertRepository <|.. EfAlertRepository
+ThresholdRepository <|.. EfThresholdRepository
+IncidentRepository <|.. EfIncidentRepository
+NotificationChannelRepository <|.. EfNotificationChannelRepository
+AlertDeliveryRepository <|.. EfAlertDeliveryRepository
+
+AlertController --> NotificationApplicationService
+ThresholdController --> NotificationApplicationService
+IncidentController --> NotificationApplicationService
+
+' ==========================================================
+' SUPPORT RELATION
+' ==========================================================
+
+SupportTicket --> User : userId
+SupportTicket --> Site : siteId
+SupportTicket --> SupportAgent : assignedAgentId
+SupportTicket "1" o-- "*" SupportMessage
+SupportConversation --> SupportTicket : ticketId
+
+SupportApplicationService --> SupportTicketRepository
+SupportApplicationService --> SupportMessageRepository
+SupportApplicationService --> SupportAgentRepository
+SupportApplicationService --> KnowledgeArticleRepository
+SupportApplicationService --> SupportPriorityService
+SupportApplicationService --> UnitOfWork
+
+SupportTicketRepository <|.. EfSupportTicketRepository
+SupportMessageRepository <|.. EfSupportMessageRepository
+SupportAgentRepository <|.. EfSupportAgentRepository
+KnowledgeArticleRepository <|.. EfKnowledgeArticleRepository
+
+SupportTicketController --> SupportApplicationService
+SupportMessageController --> SupportApplicationService
+KnowledgeArticleController --> SupportApplicationService
+
+' ==========================================================
+' PERSISTENCE RELATION
+' ==========================================================
+
+EfUnitOfWork ..|> UnitOfWork
+EfUnitOfWork --> LowCortisolDbContext
+
+EfUserRepository --> LowCortisolDbContext
+EfAccessProfileRepository --> LowCortisolDbContext
+EfAuthSessionRepository --> LowCortisolDbContext
+
+EfPlanRepository --> LowCortisolDbContext
+EfSubscriptionRepository --> LowCortisolDbContext
+EfPaymentRepository --> LowCortisolDbContext
+EfServiceRequestRepository --> LowCortisolDbContext
+
+EfWorkplaceRepository --> LowCortisolDbContext
+EfSiteRepository --> LowCortisolDbContext
+EfSiteMemberRepository --> LowCortisolDbContext
+EfSiteDeviceAssignmentRepository --> LowCortisolDbContext
+
+EfDeviceRepository --> LowCortisolDbContext
+EfSensorRepository --> LowCortisolDbContext
+EfValveRepository --> LowCortisolDbContext
+EfDeviceCommandRepository --> LowCortisolDbContext
+
+EfMonitoringSessionRepository --> LowCortisolDbContext
+EfReadingRepository --> LowCortisolDbContext
+EfAnomalyRepository --> LowCortisolDbContext
+EfReportRepository --> LowCortisolDbContext
+
+EfAlertRepository --> LowCortisolDbContext
+EfThresholdRepository --> LowCortisolDbContext
+EfIncidentRepository --> LowCortisolDbContext
+EfNotificationChannelRepository --> LowCortisolDbContext
+EfAlertDeliveryRepository --> LowCortisolDbContext
+
+EfSupportTicketRepository --> LowCortisolDbContext
+EfSupportMessageRepository --> LowCortisolDbContext
+EfSupportAgentRepository --> LowCortisolDbContext
+EfKnowledgeArticleRepository --> LowCortisolDbContext
+
+note bottom
+Backend real proyectado para C#:
+ASP.NET Core Web API + Entity Framework Core.
+Las clases se mantienen en singular porque cada una representa
+una entidad, servicio, repositorio, controller o caso de uso individual.
+Los endpoints REST pueden permanecer en plural porque representan colecciones.
+end note
+
+' ==========================================================
+' EXTRA DEPENDENCY CONNECTIONS
+' These dependencies avoid isolated classes in the diagram.
+' ==========================================================
+
+' =========================
+' Shared usage
+' =========================
+
+AuthController ..> ApiResponse
+UserController ..> ApiResponse
+AccessProfileController ..> ApiResponse
+
+PlanController ..> ApiResponse
+SubscriptionController ..> ApiResponse
+PaymentController ..> ApiResponse
+
+WorkplaceController ..> ApiResponse
+SiteController ..> ApiResponse
+SiteMemberController ..> ApiResponse
+SiteDeviceAssignmentController ..> ApiResponse
+
+DeviceController ..> ApiResponse
+SensorController ..> ApiResponse
+ValveController ..> ApiResponse
+DeviceCommandController ..> ApiResponse
+
+MonitoringController ..> ApiResponse
+ReadingController ..> ApiResponse
+ReportController ..> ApiResponse
+
+AlertController ..> ApiResponse
+ThresholdController ..> ApiResponse
+IncidentController ..> ApiResponse
+
+SupportTicketController ..> ApiResponse
+SupportMessageController ..> ApiResponse
+KnowledgeArticleController ..> ApiResponse
+
+PlanController ..> PageResult
+SiteController ..> PageResult
+DeviceController ..> PageResult
+ReadingController ..> PageResult
+AlertController ..> PageResult
+SupportTicketController ..> PageResult
+
+AuthApplicationService --> DateTimeProvider
+PlanApplicationService --> DateTimeProvider
+WorkplaceApplicationService --> DateTimeProvider
+DeviceControlApplicationService --> DateTimeProvider
+MonitoringApplicationService --> DateTimeProvider
+NotificationApplicationService --> DateTimeProvider
+SupportApplicationService --> DateTimeProvider
+
+Repository <|.. UserRepository
+Repository <|.. PlanRepository
+Repository <|.. SiteRepository
+Repository <|.. DeviceRepository
+Repository <|.. ReadingRepository
+Repository <|.. AlertRepository
+Repository <|.. SupportTicketRepository
+
+' =========================
+' IAM command and dto usage
+' =========================
+
+AuthController ..> SignInCommand
+AuthController ..> SignUpCommand
+AuthController ..> RecoverPasswordCommand
+UserController ..> UpdateProfileCommand
+
+AuthApplicationService ..> SignInCommand
+AuthApplicationService ..> SignUpCommand
+AuthApplicationService ..> RecoverPasswordCommand
+UserApplicationService ..> UpdateProfileCommand
+
+AuthApplicationService ..> AuthResult
+AuthResult --> UserDto
+AuthResult --> AccessProfileDto
+AuthResult --> AuthSessionDto
+
+UserApplicationService ..> UserDto
+AccessProfileController ..> AccessProfileDto
+AuthApplicationService ..> AuthSessionDto
+
+UserDto ..> User
+AccessProfileDto ..> AccessProfile
+AuthSessionDto ..> AuthSession
+
+JwtTokenService ..> User
+BcryptPasswordHashingService ..> User
+
+EfUserRepository ..> User
+EfAccessProfileRepository ..> AccessProfile
+EfAuthSessionRepository ..> AuthSession
+
+' =========================
+' Plan command and dto usage
+' =========================
+
+PlanController ..> PlanDto
+SubscriptionController ..> SubscribeCommand
+SubscriptionController ..> ChangePlanCommand
+SubscriptionController ..> CancelSubscriptionCommand
+PaymentController ..> PaymentDto
+
+PlanApplicationService ..> SubscribeCommand
+PlanApplicationService ..> ChangePlanCommand
+PlanApplicationService ..> CancelSubscriptionCommand
+
+PlanApplicationService ..> PlanDto
+PlanApplicationService ..> PlanFeatureDto
+PlanApplicationService ..> SubscriptionDto
+PlanApplicationService ..> PaymentDto
+PlanApplicationService ..> ServiceRequestDto
+PlanApplicationService ..> PlanSummaryDto
+
+PlanDto --> PlanFeatureDto
+PlanDto ..> Plan
+PlanFeatureDto ..> PlanFeature
+SubscriptionDto ..> Subscription
+PaymentDto ..> Payment
+ServiceRequestDto ..> ServiceRequest
+PlanSummaryDto ..> Plan
+PlanSummaryDto ..> Subscription
+PlanSummaryDto ..> Payment
+
+SubscriptionPolicyService ..> Plan
+SubscriptionPolicyService ..> Subscription
+
+EfPlanRepository ..> Plan
+EfSubscriptionRepository ..> Subscription
+EfPaymentRepository ..> Payment
+EfServiceRequestRepository ..> ServiceRequest
+
+' =========================
+' Workplace command and dto usage
+' =========================
+
+SiteController ..> CreateSiteCommand
+SiteMemberController ..> AssignMemberToSiteCommand
+SiteDeviceAssignmentController ..> AssignDeviceToSiteCommand
+
+WorkplaceApplicationService ..> CreateSiteCommand
+WorkplaceApplicationService ..> AssignMemberToSiteCommand
+WorkplaceApplicationService ..> AssignDeviceToSiteCommand
+
+WorkplaceApplicationService ..> WorkplaceDto
+WorkplaceApplicationService ..> SiteDto
+WorkplaceApplicationService ..> SiteMemberDto
+WorkplaceApplicationService ..> SiteDeviceAssignmentDto
+WorkplaceApplicationService ..> WorkplaceSummaryDto
+
+WorkplaceDto ..> Workplace
+SiteDto ..> Site
+SiteMemberDto ..> SiteMember
+SiteDeviceAssignmentDto ..> SiteDeviceAssignment
+WorkplaceSummaryDto ..> Workplace
+WorkplaceSummaryDto ..> Site
+WorkplaceSummaryDto ..> SiteMember
+WorkplaceSummaryDto ..> SiteDeviceAssignment
+
+EfWorkplaceRepository ..> Workplace
+EfSiteRepository ..> Site
+EfSiteMemberRepository ..> SiteMember
+EfSiteDeviceAssignmentRepository ..> SiteDeviceAssignment
+
+' =========================
+' Device Control command and dto usage
+' =========================
+
+DeviceController ..> CreateDeviceCommand
+SensorController ..> LinkSensorCommand
+DeviceCommandController ..> ExecuteDeviceCommand
+
+DeviceControlApplicationService ..> CreateDeviceCommand
+DeviceControlApplicationService ..> LinkSensorCommand
+DeviceControlApplicationService ..> ExecuteDeviceCommand
+
+DeviceControlApplicationService ..> DeviceDto
+DeviceControlApplicationService ..> SensorDto
+DeviceControlApplicationService ..> ValveDto
+DeviceControlApplicationService ..> DeviceCommandDto
+DeviceControlApplicationService ..> DeviceControlSummaryDto
+
+DeviceDto --> SensorDto
+DeviceDto --> ValveDto
+DeviceDto --> DeviceCommandDto
+
+DeviceDto ..> Device
+SensorDto ..> Sensor
+ValveDto ..> Valve
+DeviceCommandDto ..> DeviceCommand
+DeviceControlSummaryDto ..> Device
+DeviceControlSummaryDto ..> Sensor
+DeviceControlSummaryDto ..> Valve
+DeviceControlSummaryDto ..> DeviceCommand
+
+EfDeviceRepository ..> Device
+EfSensorRepository ..> Sensor
+EfValveRepository ..> Valve
+EfDeviceCommandRepository ..> DeviceCommand
+
+' =========================
+' Monitoring command and dto usage
+' =========================
+
+ReadingController ..> CreateReadingCommand
+ReportController ..> CreateReportCommand
+
+MonitoringApplicationService ..> CreateReadingCommand
+MonitoringApplicationService ..> CreateReportCommand
+MonitoringApplicationService ..> MonitoringSummaryDto
+
+MonitoringSummaryDto ..> Reading
+MonitoringSummaryDto ..> Anomaly
+
+AnomalyDetectionService ..> Reading
+AnomalyDetectionService ..> Anomaly
+
+EfMonitoringSessionRepository ..> MonitoringSession
+EfReadingRepository ..> Reading
+EfAnomalyRepository ..> Anomaly
+EfReportRepository ..> Report
+
+' =========================
+' Notification command and dto usage
+' =========================
+
+AlertController ..> CreateAlertCommand
+ThresholdController ..> CreateThresholdCommand
+
+NotificationApplicationService ..> CreateAlertCommand
+NotificationApplicationService ..> CreateThresholdCommand
+NotificationApplicationService ..> NotificationSummaryDto
+
+NotificationSummaryDto ..> Alert
+NotificationSummaryDto ..> Threshold
+NotificationSummaryDto ..> Incident
+NotificationSummaryDto ..> NotificationChannel
+NotificationSummaryDto ..> AlertDelivery
+
+AlertPolicyService ..> Alert
+AlertPolicyService ..> Incident
+
+EfAlertRepository ..> Alert
+EfThresholdRepository ..> Threshold
+EfIncidentRepository ..> Incident
+EfNotificationChannelRepository ..> NotificationChannel
+EfAlertDeliveryRepository ..> AlertDelivery
+
+' =========================
+' Support command and dto usage
+' =========================
+
+SupportTicketController ..> CreateSupportTicketCommand
+SupportMessageController ..> SendSupportMessageCommand
+
+SupportApplicationService ..> CreateSupportTicketCommand
+SupportApplicationService ..> SendSupportMessageCommand
+SupportApplicationService ..> SupportSummaryDto
+
+SupportSummaryDto ..> SupportTicket
+SupportSummaryDto ..> SupportAgent
+SupportSummaryDto ..> KnowledgeArticle
+
+SupportPriorityService ..> SupportTicket
+SupportPriorityService ..> SupportAgent
+
+EfSupportTicketRepository ..> SupportTicket
+EfSupportMessageRepository ..> SupportMessage
+EfSupportAgentRepository ..> SupportAgent
+EfKnowledgeArticleRepository ..> KnowledgeArticle
+
+' =========================
+' DbContext explicit entity dependency
+' =========================
+
+LowCortisolDbContext ..> User
+LowCortisolDbContext ..> AccessProfile
+LowCortisolDbContext ..> Permission
+LowCortisolDbContext ..> AuthSession
+
+LowCortisolDbContext ..> Plan
+LowCortisolDbContext ..> PlanFeature
+LowCortisolDbContext ..> Subscription
+LowCortisolDbContext ..> Payment
+LowCortisolDbContext ..> ServiceRequest
+
+LowCortisolDbContext ..> Workplace
+LowCortisolDbContext ..> Site
+LowCortisolDbContext ..> SiteMember
+LowCortisolDbContext ..> SiteDeviceAssignment
+
+LowCortisolDbContext ..> Device
+LowCortisolDbContext ..> Sensor
+LowCortisolDbContext ..> Valve
+LowCortisolDbContext ..> DeviceCommand
+
+LowCortisolDbContext ..> MonitoringSession
+LowCortisolDbContext ..> Reading
+LowCortisolDbContext ..> Anomaly
+LowCortisolDbContext ..> Report
+
+LowCortisolDbContext ..> Alert
+LowCortisolDbContext ..> Threshold
+LowCortisolDbContext ..> Incident
+LowCortisolDbContext ..> NotificationChannel
+LowCortisolDbContext ..> AlertDelivery
+
+LowCortisolDbContext ..> SupportTicket
+LowCortisolDbContext ..> SupportMessage
+LowCortisolDbContext ..> SupportAgent
+LowCortisolDbContext ..> SupportConversation
+LowCortisolDbContext ..> KnowledgeArticle
+
+@enduml
