@@ -94,6 +94,8 @@ const form = reactive({
 onMounted(() => {
   const planId = route.query.plan;
   const planCode = route.query.code;
+  const checkout = route.query.checkout;
+  const paymentMethod = route.query.paymentMethod;
 
   if (planId) {
     localStorage.setItem("lowcortisol.pendingPlanId", String(planId));
@@ -102,20 +104,28 @@ onMounted(() => {
   if (planCode) {
     localStorage.setItem("lowcortisol.pendingPlanCode", String(planCode));
   }
+
+  if (checkout) {
+    localStorage.setItem("lowcortisol.pendingCheckout", String(checkout));
+  }
+
+  if (paymentMethod) {
+    localStorage.setItem("lowcortisol.pendingPaymentMethod", String(paymentMethod));
+  }
 });
 
 async function handleSubmit() {
   await signUp(form);
 
   const pendingPlanId = localStorage.getItem("lowcortisol.pendingPlanId");
-  const pendingPlanCode = localStorage.getItem("lowcortisol.pendingPlanCode");
+  const pendingCheckout = localStorage.getItem("lowcortisol.pendingCheckout");
 
-  if (pendingPlanId) {
+  if (pendingPlanId && pendingCheckout === "paid") {
     await router.push({
       name: "plans",
       query: {
         plan: pendingPlanId,
-        code: pendingPlanCode || "",
+        checkout: pendingCheckout,
       },
     });
     return;

@@ -224,13 +224,13 @@ onMounted(async () => {
 
 async function applyLandingSelectedPlan() {
   const planIdFromQuery = route.query.plan ? String(route.query.plan) : "";
-  const planCodeFromQuery = route.query.code ? String(route.query.code) : "";
+  const checkoutFromQuery = route.query.checkout ? String(route.query.checkout) : "";
 
   const pendingPlanId =
       planIdFromQuery || localStorage.getItem("lowcortisol.pendingPlanId");
 
-  const pendingPlanCode =
-      planCodeFromQuery || localStorage.getItem("lowcortisol.pendingPlanCode");
+  const pendingCheckout =
+      checkoutFromQuery || localStorage.getItem("lowcortisol.pendingCheckout");
 
   if (!pendingPlanId) {
     return;
@@ -243,16 +243,28 @@ async function applyLandingSelectedPlan() {
     return;
   }
 
+  if (pendingCheckout === "paid") {
+    if (state.subscription?.planId !== pendingPlanId) {
+      if (state.subscription?.id) {
+        await changePlan(pendingPlanId);
+      } else {
+        await subscribeToPlan(pendingPlanId);
+      }
+    }
+
+    clearPendingPlan();
+
+    await router.replace({
+      name: "plans",
+    });
+
+    return;
+  }
+
   selectedPlan.value = selected;
-  clearPendingPlan();
 
   await router.replace({
     name: "plans",
-  });
-
-  console.log("Selected plan from landing:", {
-    planId: pendingPlanId,
-    code: pendingPlanCode,
   });
 }
 
@@ -289,6 +301,8 @@ async function handleCancelSubscription() {
 function clearPendingPlan() {
   localStorage.removeItem("lowcortisol.pendingPlanId");
   localStorage.removeItem("lowcortisol.pendingPlanCode");
+  localStorage.removeItem("lowcortisol.pendingCheckout");
+  localStorage.removeItem("lowcortisol.pendingPaymentMethod");
 }
 
 function getSubscriptionStatusLabel(status) {
