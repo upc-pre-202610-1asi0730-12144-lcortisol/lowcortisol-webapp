@@ -111,7 +111,7 @@
               class="btn-primary plan-action"
               type="button"
               :disabled="state.subscription?.planId === plan.id"
-              @click="handlePlanAction(plan)"
+              @click="openCheckout(plan)"
           >
             {{
               state.subscription?.planId === plan.id
@@ -123,6 +123,13 @@
           </button>
         </article>
       </section>
+
+      <CheckoutForm
+          v-if="selectedPlan"
+          :plan="selectedPlan"
+          @submit="handleCheckoutSubmit"
+          @close="closeCheckout"
+      />
 
       <section class="details-grid">
         <UiCard :title="t('plans.page.paymentHistory')">
@@ -184,11 +191,13 @@
 </template>
 
 <script setup>
-import { onMounted } from "vue";
+import { onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import AppLayout from "../../../../shared/presentation/components/app-layout/app-layout.component.vue";
 import UiCard from "../../../../shared/presentation/components/ui-card/ui-card.component.vue";
+
+import CheckoutForm from "./components/checkout-form/checkout-form.component.vue";
 
 import { usePlanStore } from "../../../application/store/plan.store";
 import { useTranslation } from "../../../../shared/application/services/translation.service";
@@ -205,6 +214,8 @@ const {
 } = usePlanStore();
 
 const { t } = useTranslation();
+
+const selectedPlan = ref(null);
 
 onMounted(async () => {
   await loadPlanPage();
@@ -225,55 +236,50 @@ async function applyLandingSelectedPlan() {
     return;
   }
 
-  const selectedPlan = state.plans.find((plan) => plan.id === pendingPlanId);
+  const selected = state.plans.find((plan) => plan.id === pendingPlanId);
 
-  if (!selectedPlan) {
+  if (!selected) {
     clearPendingPlan();
     return;
   }
 
-  try {
-    if (state.subscription?.planId === pendingPlanId) {
-      clearPendingPlan();
+  selectedPlan.value = selected;
+  clearPendingPlan();
 
-      await router.replace({
-        name: "plans",
-      });
+  await router.replace({
+    name: "plans",
+  });
 
-      return;
-    }
-
-    if (state.subscription?.id) {
-      await changePlan(pendingPlanId);
-    } else {
-      await subscribeToPlan(pendingPlanId);
-    }
-
-    clearPendingPlan();
-
-    await router.replace({
-      name: "plans",
-    });
-  } catch (error) {
-    console.error("Could not apply selected plan from landing:", {
-      planId: pendingPlanId,
-      code: pendingPlanCode,
-      error,
-    });
-  }
+  console.log("Selected plan from landing:", {
+    planId: pendingPlanId,
+    code: pendingPlanCode,
+  });
 }
 
-async function handlePlanAction(plan) {
+function openCheckout(plan) {
   if (state.subscription?.planId === plan.id) {
     return;
   }
 
-  if (state.subscription?.id) {
-    await changePlan(plan.id);
+  selectedPlan.value = plan;
+}
+
+function closeCheckout() {
+  selectedPlan.value = null;
+}
+
+async function handleCheckoutSubmit() {
+  if (!selectedPlan.value) {
     return;
   }
 
-  await subscribeToPlan(plan.id);
+  if (state.subscription?.id) {
+    await changePlan(selectedPlan.value.id);
+  } else {
+    await subscribeToPlan(selectedPlan.value.id);
+  }
+
+  closeCheckout();
 }
 
 async function handleCancelSubscription() {
