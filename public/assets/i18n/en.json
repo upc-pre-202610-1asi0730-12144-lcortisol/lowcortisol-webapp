@@ -355,11 +355,14 @@
       "cancelled": "Cancelled",
       "suspended": "Suspended",
       "expired": "Expired",
-      "unknown": "Unknown status",
+      "unknown": "No status",
       "paid": "Paid",
       "pending": "Pending",
       "failed": "Failed",
-      "refunded": "Refunded"
+      "refunded": "Refunded",
+      "open": "Open",
+      "resolved": "Resolved",
+      "closed": "Closed"
     },
     "requests": {
       "changePlan": "Plan change",

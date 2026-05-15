@@ -1,213 +1,190 @@
 <template>
   <AppLayout>
-    <section class="page-header">
-      <div>
-        <h1 class="page-title">
-          {{ t('plans.page.title') }}
-        </h1>
-
-        <p class="page-subtitle">
-          {{ t('plans.page.subtitle') }}
-        </p>
-      </div>
-
-      <button
-          v-if="state.subscription"
-          class="btn-primary"
-          type="button"
-          @click="cancelSubscription"
-      >
-        {{ t('plans.page.cancelSubscription') }}
-      </button>
-    </section>
-
-    <div v-if="!state.subscription" class="subscription-warning">
-      {{ t('plans.page.noActiveSubscription') }}
-    </div>
-
-    <section class="grid grid-3 plans-summary">
-      <UiCard :title="t('plans.page.activePlan')" compact>
-        <p class="summary-number summary-text">
-          {{ state.summary.activePlanName }}
-        </p>
-        <p class="summary-label">
-          {{ getSubscriptionStatusLabel(state.subscription?.status) }}
-        </p>
-      </UiCard>
-
-      <UiCard :title="t('plans.page.capacity')" compact>
-        <p class="summary-number">
-          {{ state.summary.maxSites }}
-        </p>
-        <p class="summary-label">
-          {{ t('plans.page.allowedSites') }}
-        </p>
-      </UiCard>
-
-      <UiCard :title="t('plans.page.payments')" compact>
-        <p class="summary-number">
-          S/ {{ Number(state.summary.totalPaid || 0).toFixed(2) }}
-        </p>
-        <p class="summary-label">
-          {{ t('plans.page.totalPaid') }}
-        </p>
-      </UiCard>
-    </section>
-
-    <section class="plans-list">
-      <PlanCard
-          v-for="plan in state.plans"
-          :key="plan.id"
-          :plan="plan"
-          :active="plan.id === state.subscription?.planId"
-          @buy="openCheckout"
-      />
-    </section>
-
-    <Teleport to="body">
-      <div
-          v-if="selectedPlan"
-          class="checkout-overlay"
-          @click.self="closeCheckout"
-      >
-        <aside class="checkout-drawer">
-          <div class="checkout-handle"></div>
-
-          <header class="checkout-header">
-            <div>
-              <h2>{{ t('plans.page.checkoutTitle') }}</h2>
-              <p>{{ t('plans.page.checkoutSubtitle') }}</p>
-            </div>
-
-            <button class="checkout-close" type="button" @click="closeCheckout">
-              ×
-            </button>
-          </header>
-
-          <div class="selected-plan">
-            <span>{{ t('plans.page.selectedPlan') }}</span>
-            <strong>
-              {{ selectedPlan.name }} · S/ {{ Number(selectedPlan.price).toFixed(2) }}
-            </strong>
-          </div>
-
-          <form class="checkout-form" @submit.prevent="handlePurchase">
-            <label class="form-field">
-              <span>{{ t('plans.page.cardholderName') }}</span>
-              <input
-                  v-model="checkout.cardholderName"
-                  type="text"
-                  placeholder="Jean Loa"
-              />
-            </label>
-
-            <label class="form-field">
-              <span>{{ t('plans.page.cardNumber') }}</span>
-              <input
-                  :value="checkout.cardNumber"
-                  type="text"
-                  inputmode="numeric"
-                  autocomplete="cc-number"
-                  maxlength="19"
-                  placeholder="4242 4242 4242 4242"
-                  @input="handleCardNumberInput"
-              />
-            </label>
-
-            <div class="form-grid">
-              <label class="form-field">
-                <span>{{ t('plans.page.expirationDate') }}</span>
-                <input
-                    :value="checkout.expirationDate"
-                    type="text"
-                    inputmode="numeric"
-                    autocomplete="cc-exp"
-                    maxlength="5"
-                    placeholder="12/29"
-                    @input="handleExpirationDateInput"
-                />
-              </label>
-
-              <label class="form-field">
-                <span>{{ t('plans.page.securityCode') }}</span>
-                <input
-                    :value="checkout.securityCode"
-                    type="password"
-                    inputmode="numeric"
-                    autocomplete="cc-csc"
-                    maxlength="3"
-                    placeholder="123"
-                    @input="handleSecurityCodeInput"
-                />
-              </label>
-            </div>
-
-            <div class="checkout-actions">
-              <button class="btn-secondary" type="button" @click="closeCheckout">
-                {{ t('plans.page.closeForm') }}
-              </button>
-
-              <button class="btn-primary" type="submit">
-                {{ t('plans.page.confirmPurchase') }}
-              </button>
-            </div>
-          </form>
-        </aside>
-      </div>
-    </Teleport>
-
-    <section class="grid grid-2 plans-bottom">
-      <UiCard :title="t('plans.page.paymentHistory')">
-        <div v-if="state.payments.length === 0" class="empty-state">
-          {{ t('plans.page.noPayments') }}
+    <section class="plans-page">
+      <header class="page-header">
+        <div>
+          <h1>{{ t("plans.page.title") }}</h1>
+          <p>{{ t("plans.page.subtitle") }}</p>
         </div>
 
-        <div v-else class="simple-list">
+        <button
+            v-if="state.subscription?.id"
+            class="btn-primary"
+            type="button"
+            @click="handleCancelSubscription"
+        >
+          {{ t("plans.page.cancelSubscription") }}
+        </button>
+      </header>
+
+      <p v-if="state.error" class="error-message">
+        {{ state.error }}
+      </p>
+
+      <p v-if="state.message" class="success-message">
+        {{ state.message }}
+      </p>
+
+      <div
+          v-if="!state.subscription?.id"
+          class="subscription-warning"
+      >
+        {{ t("plans.page.noActiveSubscription") }}
+      </div>
+
+      <section class="summary-grid">
+        <UiCard :title="t('plans.page.activePlan')">
+          <strong class="summary-value">
+            {{ state.summary.activePlanName || t("plans.status.unknown") }}
+          </strong>
+
+          <p class="summary-label">
+            {{ getSubscriptionStatusLabel(state.summary.subscriptionStatus) }}
+          </p>
+        </UiCard>
+
+        <UiCard :title="t('plans.page.capacity')">
+          <strong class="summary-value">
+            {{ state.summary.maxSites || 0 }}
+          </strong>
+
+          <p class="summary-label">
+            {{ t("plans.page.allowedSites") }}
+          </p>
+        </UiCard>
+
+        <UiCard :title="t('plans.page.payments')">
+          <strong class="summary-value">
+            S/ {{ Number(state.summary.totalPaid || 0).toFixed(2) }}
+          </strong>
+
+          <p class="summary-label">
+            {{ t("plans.page.totalPaid") }}
+          </p>
+        </UiCard>
+      </section>
+
+      <section class="plans-grid">
+        <article
+            v-for="plan in state.plans"
+            :key="plan.id"
+            class="plan-card"
+            :class="{
+            'plan-card-popular': plan.recommended,
+            'plan-card-active': state.subscription?.planId === plan.id
+          }"
+        >
+          <span
+              v-if="plan.recommended"
+              class="plan-badge"
+          >
+            {{ t("plans.page.recommended") }}
+          </span>
+
+          <div class="plan-header">
+            <div>
+              <h2>{{ plan.name }}</h2>
+              <p>{{ plan.description }}</p>
+            </div>
+
+            <div class="plan-price">
+              S/ {{ Number(plan.price || 0).toFixed(2) }}
+              <span>{{ t("plans.page.monthly") }}</span>
+            </div>
+          </div>
+
+          <p class="plan-capacity">
+            {{ plan.maxSites }} {{ t("plans.page.sites") }} ·
+            {{ plan.maxDevices }} {{ t("plans.page.devices") }}
+          </p>
+
+          <ul class="plan-features">
+            <li
+                v-for="feature in plan.features || []"
+                :key="feature.id"
+            >
+              {{ feature.name }}
+            </li>
+          </ul>
+
+          <button
+              class="btn-primary plan-action"
+              type="button"
+              :disabled="state.subscription?.planId === plan.id"
+              @click="handlePlanAction(plan)"
+          >
+            {{
+              state.subscription?.planId === plan.id
+                  ? t("plans.page.currentPlan")
+                  : state.subscription?.id
+                      ? t("plans.requests.changePlan")
+                      : t("plans.page.buyPlan")
+            }}
+          </button>
+        </article>
+      </section>
+
+      <section class="details-grid">
+        <UiCard :title="t('plans.page.paymentHistory')">
+          <div
+              v-if="state.payments.length === 0"
+              class="empty-state"
+          >
+            {{ t("plans.page.noPayments") }}
+          </div>
+
           <div
               v-for="payment in state.payments"
               :key="payment.id"
-              class="simple-item"
+              class="detail-row"
           >
             <div>
-              <strong>S/ {{ Number(payment.amount || 0).toFixed(2) }}</strong>
-              <span>{{ payment.method }}</span>
+              <strong>
+                S/ {{ Number(payment.amount || 0).toFixed(2) }}
+              </strong>
+
+              <p>{{ payment.method }}</p>
             </div>
 
-            <span class="badge badge-success">
+            <span class="status-pill">
               {{ getPaymentStatusLabel(payment.status) }}
             </span>
           </div>
-        </div>
-      </UiCard>
+        </UiCard>
 
-      <UiCard :title="t('plans.page.serviceRequest')">
-        <div v-if="state.serviceRequest.length === 0" class="empty-state">
-          {{ t('plans.page.noRequest') }}
-        </div>
+        <UiCard :title="t('plans.page.serviceRequest')">
+          <div
+              v-if="state.serviceRequest.length === 0"
+              class="empty-state"
+          >
+            {{ t("plans.page.noRequest") }}
+          </div>
 
-        <div v-else class="simple-list">
           <div
               v-for="request in state.serviceRequest"
               :key="request.id"
-              class="simple-item"
+              class="detail-row"
           >
             <div>
-              <strong>{{ getRequestTypeLabel(request.type) }}</strong>
-              <span>{{ request.description }}</span>
+              <strong>
+                {{ getRequestTypeLabel(request.type) }}
+              </strong>
+
+              <p>{{ request.description }}</p>
             </div>
 
-            <span class="badge badge-primary">
+            <span class="status-pill">
               {{ getRequestStatusLabel(request.status) }}
             </span>
           </div>
-        </div>
-      </UiCard>
+        </UiCard>
+      </section>
     </section>
   </AppLayout>
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from "vue";
+import { onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 import AppLayout from "../../../../shared/presentation/components/app-layout/app-layout.component.vue";
@@ -229,15 +206,6 @@ const {
 
 const { t } = useTranslation();
 
-const selectedPlan = ref(null);
-
-const checkout = reactive({
-  cardholderName: "",
-  cardNumber: "",
-  expirationDate: "",
-  securityCode: "",
-});
-
 onMounted(async () => {
   await loadPlanPage();
   await applyLandingSelectedPlan();
@@ -257,17 +225,21 @@ async function applyLandingSelectedPlan() {
     return;
   }
 
-  const selected = state.plans.find((plan) => plan.id === pendingPlanId);
+  const selectedPlan = state.plans.find((plan) => plan.id === pendingPlanId);
 
-  if (!selected) {
-    localStorage.removeItem("lowcortisol.pendingPlanId");
-    localStorage.removeItem("lowcortisol.pendingPlanCode");
+  if (!selectedPlan) {
+    clearPendingPlan();
     return;
   }
 
   try {
     if (state.subscription?.planId === pendingPlanId) {
       clearPendingPlan();
+
+      await router.replace({
+        name: "plans",
+      });
+
       return;
     }
 
@@ -283,7 +255,7 @@ async function applyLandingSelectedPlan() {
       name: "plans",
     });
   } catch (error) {
-    console.error("Could not apply landing selected plan:", {
+    console.error("Could not apply selected plan from landing:", {
       planId: pendingPlanId,
       code: pendingPlanCode,
       error,
@@ -291,115 +263,38 @@ async function applyLandingSelectedPlan() {
   }
 }
 
+async function handlePlanAction(plan) {
+  if (state.subscription?.planId === plan.id) {
+    return;
+  }
+
+  if (state.subscription?.id) {
+    await changePlan(plan.id);
+    return;
+  }
+
+  await subscribeToPlan(plan.id);
+}
+
+async function handleCancelSubscription() {
+  await cancelSubscription();
+}
+
 function clearPendingPlan() {
   localStorage.removeItem("lowcortisol.pendingPlanId");
   localStorage.removeItem("lowcortisol.pendingPlanCode");
 }
 
-function openCheckout(plan) {
-  selectedPlan.value = plan;
-}
+function getSubscriptionStatusLabel(status) {
+  const labels = {
+    active: t("plans.status.active"),
+    cancelled: t("plans.status.cancelled"),
+    suspended: t("plans.status.suspended"),
+    expired: t("plans.status.expired"),
+    unknown: t("plans.status.unknown"),
+  };
 
-function closeCheckout() {
-  selectedPlan.value = null;
-  checkout.cardholderName = "";
-  checkout.cardNumber = "";
-  checkout.expirationDate = "";
-  checkout.securityCode = "";
-}
-
-function onlyNumbers(value) {
-  return String(value || "").replace(/\D/g, "");
-}
-
-function formatCardNumber(value) {
-  return onlyNumbers(value)
-      .slice(0, 16)
-      .replace(/(.{4})/g, "$1 ")
-      .trim();
-}
-
-function formatExpirationDate(value) {
-  const numbers = onlyNumbers(value).slice(0, 4);
-
-  if (numbers.length === 0) {
-    return "";
-  }
-
-  if (numbers.length === 1) {
-    const firstDigit = Number(numbers);
-
-    if (firstDigit > 1) {
-      return `0${firstDigit}`;
-    }
-
-    return numbers;
-  }
-
-  let month = numbers.slice(0, 2);
-  let monthNumber = Number(month);
-
-  if (monthNumber < 1) {
-    month = "01";
-  }
-
-  if (monthNumber > 12) {
-    month = "12";
-  }
-
-  if (numbers.length <= 2) {
-    return month;
-  }
-
-  const yearInput = numbers.slice(2);
-  const currentYearShort = new Date().getFullYear() % 100;
-
-  if (yearInput.length === 1) {
-    return `${month}/${yearInput}`;
-  }
-
-  let yearNumber = Number(yearInput);
-
-  if (yearNumber < currentYearShort) {
-    yearNumber = currentYearShort;
-  }
-
-  const year = String(yearNumber).padStart(2, "0");
-
-  return `${month}/${year}`;
-}
-
-function formatSecurityCode(value) {
-  return onlyNumbers(value).slice(0, 3);
-}
-
-function handleCardNumberInput(event) {
-  checkout.cardNumber = formatCardNumber(event.target.value);
-  event.target.value = checkout.cardNumber;
-}
-
-function handleExpirationDateInput(event) {
-  checkout.expirationDate = formatExpirationDate(event.target.value);
-  event.target.value = checkout.expirationDate;
-}
-
-function handleSecurityCodeInput(event) {
-  checkout.securityCode = formatSecurityCode(event.target.value);
-  event.target.value = checkout.securityCode;
-}
-
-async function handleCheckoutSubmit() {
-  if (!selectedPlan.value) {
-    return;
-  }
-
-  if (state.subscription?.id) {
-    await changePlan(selectedPlan.value.id);
-  } else {
-    await subscribeToPlan(selectedPlan.value.id);
-  }
-
-  closeCheckout();
+  return labels[status] || t("plans.status.unknown");
 }
 
 function getPaymentStatusLabel(status) {
@@ -415,8 +310,10 @@ function getPaymentStatusLabel(status) {
 
 function getRequestTypeLabel(type) {
   const labels = {
-    "change-plan": t("plans.request.changePlan"),
-    cancellation: t("plans.request.cancellation"),
+    "change-plan": t("plans.requests.changePlan"),
+    cancellation: t("plans.requests.cancellation"),
+    support: t("plans.requests.support"),
+    request: t("plans.requests.request"),
   };
 
   return labels[type] || type;
@@ -434,102 +331,185 @@ function getRequestStatusLabel(status) {
 </script>
 
 <style scoped>
-.subscription-warning {
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  background: var(--color-primary-light);
-  color: var(--color-primary);
-  font-weight: 900;
-  line-height: 1.5;
-  padding: 18px 22px;
-  margin-bottom: 20px;
-}
-
-.plans-summary {
-  margin-bottom: 20px;
-}
-
-.plans-list {
+.plans-page {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 20px;
+  gap: 28px;
 }
 
-.checkout-section,
-.plans-bottom {
-  margin-top: 20px;
-}
-
-.selected-plan {
+.page-header {
   display: flex;
   justify-content: space-between;
-  gap: 16px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface-soft);
-  padding: 16px;
-  margin-bottom: 18px;
+  gap: 20px;
+  align-items: flex-start;
 }
 
-.selected-plan span {
-  color: var(--color-text-muted);
-}
-
-.selected-plan strong {
-  color: var(--color-text);
-}
-
-.checkout-form {
-  display: grid;
-  gap: 16px;
-}
-
-.form-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
-}
-
-.form-field {
-  display: grid;
-  gap: 8px;
-}
-
-.form-field span {
-  color: var(--color-text-muted);
-  font-weight: 800;
-}
-
-.form-field input {
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface-soft);
-  color: var(--color-text);
-  padding: 14px 16px;
-  outline: none;
-}
-
-.checkout-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-}
-
-.summary-number {
-  color: var(--color-text);
-  font-size: 34px;
-  font-weight: 900;
-  line-height: 1;
+.page-header h1 {
+  font-size: clamp(2rem, 5vw, 3rem);
   margin: 0 0 8px;
 }
 
-.summary-text {
-  font-size: 24px;
+.page-header p {
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.subscription-warning {
+  background: #eaf4ff;
+  border: 1px solid #cbdff7;
+  color: var(--color-primary);
+  border-radius: var(--radius-lg);
+  padding: 20px 24px;
+  font-weight: 900;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.summary-value {
+  display: block;
+  font-size: 2rem;
+  margin-top: 8px;
 }
 
 .summary-label {
   color: var(--color-text-muted);
+  margin: 8px 0 0;
+}
+
+.plans-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+  align-items: stretch;
+}
+
+.plan-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 420px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: 28px;
+  box-shadow: var(--shadow-soft);
+}
+
+.plan-card-popular {
+  background: #eaf4ff;
+  border: 2px solid var(--color-primary);
+}
+
+.plan-card-active {
+  border: 2px solid var(--color-success);
+}
+
+.plan-badge {
+  width: fit-content;
+  background: #dbeafe;
+  color: var(--color-primary);
+  border: 1px solid #93c5fd;
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-size: 0.85rem;
+  font-weight: 900;
+  margin-bottom: 14px;
+}
+
+.plan-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.plan-header h2 {
+  margin: 0 0 12px;
+  font-size: 1.7rem;
+}
+
+.plan-header p {
+  color: var(--color-text-muted);
+  line-height: 1.5;
   margin: 0;
+}
+
+.plan-price {
+  min-width: 120px;
+  text-align: right;
+  font-size: 2rem;
+  font-weight: 900;
+}
+
+.plan-price span {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+.plan-capacity {
+  color: var(--color-text-muted);
+  font-weight: 900;
+  margin: 32px 0 20px;
+}
+
+.plan-features {
+  display: grid;
+  gap: 14px;
+  list-style: none;
+  padding: 0;
+  margin: 0 0 28px;
+}
+
+.plan-features li {
+  font-weight: 900;
+}
+
+.plan-features li::before {
+  content: "✓";
+  color: var(--color-success);
+  margin-right: 10px;
+}
+
+.plan-action {
+  margin-top: auto;
+  width: 100%;
+}
+
+.details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  border-bottom: 1px solid var(--color-border);
+  padding: 14px 0;
+}
+
+.detail-row:last-child {
+  border-bottom: none;
+}
+
+.detail-row p {
+  color: var(--color-text-muted);
+  margin: 6px 0 0;
+}
+
+.status-pill {
+  border-radius: 999px;
+  border: 1px solid #bfdbfe;
+  background: #eaf4ff;
+  color: var(--color-text-muted);
+  font-weight: 900;
+  padding: 10px 16px;
+  white-space: nowrap;
 }
 
 .empty-state {
@@ -539,230 +519,33 @@ function getRequestStatusLabel(status) {
   padding: 18px;
 }
 
-.simple-list {
-  display: grid;
-  gap: 14px;
+.error-message {
+  color: var(--color-danger);
+  font-weight: 900;
 }
 
-.simple-item {
-  display: flex;
-  justify-content: space-between;
-  gap: 14px;
-  border-bottom: 1px solid var(--color-border);
-  padding-bottom: 14px;
+.success-message {
+  color: var(--color-success);
+  font-weight: 900;
 }
 
-.simple-item:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
-}
-
-.simple-item strong {
-  display: block;
-  color: var(--color-text);
-  margin-bottom: 4px;
-}
-
-.simple-item span {
-  color: var(--color-text-muted);
-  margin: 0;
-}
-
-@media (max-width: 900px) {
-  .plans-list,
-  .form-grid {
+@media (max-width: 1100px) {
+  .summary-grid,
+  .plans-grid,
+  .details-grid {
     grid-template-columns: 1fr;
   }
 
-  .simple-item,
-  .selected-plan,
-  .checkout-actions {
-    flex-direction: column;
-  }
-}
-
-.checkout-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 100;
-  display: grid;
-  place-items: center;
-  background: rgba(7, 20, 47, 0.38);
-  backdrop-filter: blur(8px);
-  padding: 24px;
-  animation: overlayIn 180ms ease-out;
-}
-
-.checkout-drawer {
-  width: min(100%, 760px);
-  max-height: min(92vh, 760px);
-  overflow-y: auto;
-  border: 1px solid var(--color-border);
-  border-radius: 28px 28px var(--radius-lg) var(--radius-lg);
-  background: var(--color-surface);
-  box-shadow: 0 28px 80px rgba(15, 23, 42, 0.28);
-  padding: 18px 24px 24px;
-  animation: drawerUp 240ms ease-out;
-}
-
-.checkout-handle {
-  width: 54px;
-  height: 6px;
-  border-radius: var(--radius-pill);
-  background: var(--color-border);
-  margin: 0 auto 18px;
-}
-
-.checkout-header {
-  display: flex;
-  justify-content: space-between;
-  gap: 18px;
-  align-items: flex-start;
-  margin-bottom: 18px;
-}
-
-.checkout-header h2 {
-  color: var(--color-text);
-  font-size: 24px;
-  font-weight: 900;
-  line-height: 1.1;
-  margin: 0 0 8px;
-}
-
-.checkout-header p {
-  color: var(--color-text-muted);
-  line-height: 1.5;
-  margin: 0;
-}
-
-.checkout-close {
-  display: grid;
-  place-items: center;
-  width: 42px;
-  height: 42px;
-  border: 1px solid var(--color-border);
-  border-radius: 50%;
-  background: var(--color-surface-soft);
-  color: var(--color-text);
-  font-size: 26px;
-  font-weight: 900;
-  line-height: 1;
-}
-
-.selected-plan {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface-soft);
-  padding: 16px;
-  margin-bottom: 18px;
-}
-
-.selected-plan span {
-  color: var(--color-text-muted);
-}
-
-.selected-plan strong {
-  color: var(--color-text);
-  text-align: right;
-}
-
-.checkout-form {
-  display: grid;
-  gap: 16px;
-}
-
-.form-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
-}
-
-.form-field {
-  display: grid;
-  gap: 8px;
-}
-
-.form-field span {
-  color: var(--color-text-muted);
-  font-weight: 800;
-}
-
-.form-field input {
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background: var(--color-surface-soft);
-  color: var(--color-text);
-  padding: 14px 16px;
-  outline: none;
-}
-
-.form-field input:focus {
-  border-color: var(--color-primary);
-  background: #ffffff;
-  box-shadow: 0 0 0 4px rgba(47, 128, 237, 0.12);
-}
-
-.checkout-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-top: 4px;
-}
-
-@keyframes overlayIn {
-  from {
-    opacity: 0;
-  }
-
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes drawerUp {
-  from {
-    opacity: 0;
-    transform: translateY(34px) scale(0.98);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@media (max-width: 700px) {
-  .checkout-overlay {
-    padding: 12px;
-  }
-
-  .checkout-drawer {
-    width: 100%;
-    max-height: 88vh;
-    border-radius: 24px 24px 18px 18px;
-    padding: 14px 18px 20px;
-  }
-
-  .checkout-header,
-  .selected-plan,
-  .checkout-actions {
+  .page-header {
     flex-direction: column;
   }
 
-  .selected-plan strong {
+  .plan-header {
+    flex-direction: column;
+  }
+
+  .plan-price {
     text-align: left;
-  }
-
-  .form-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .checkout-actions .btn-primary,
-  .checkout-actions .btn-secondary {
-    width: 100%;
   }
 }
 </style>

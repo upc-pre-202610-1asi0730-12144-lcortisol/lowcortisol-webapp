@@ -349,6 +349,7 @@
       "noActiveSubscription": "Aún no tienes una suscripción activa. Compra un plan para desbloquear el acceso a la plataforma.",
       "serviceRequest": "Solicitudes de servicio",
       "noRequest": "No hay solicitudes registradas."
+
     },
     "status": {
       "active": "Activa",
@@ -359,7 +360,10 @@
       "paid": "Pagado",
       "pending": "Pendiente",
       "failed": "Fallido",
-      "refunded": "Reembolsado"
+      "refunded": "Reembolsado",
+      "open": "Abierta",
+      "resolved": "Resuelta",
+      "closed": "Cerrada"
     },
     "requests": {
       "changePlan": "Cambio de plan",

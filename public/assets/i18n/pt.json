@@ -359,7 +359,10 @@
       "paid": "Pago",
       "pending": "Pendente",
       "failed": "Falhou",
-      "refunded": "Reembolsado"
+      "refunded": "Reembolsado",
+      "open": "Aberta",
+      "resolved": "Resolvida",
+      "closed": "Fechada"
     },
     "requests": {
       "changePlan": "Mudança de plano",
