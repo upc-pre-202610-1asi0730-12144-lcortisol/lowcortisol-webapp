@@ -75,7 +75,7 @@ export class SupportTicket extends BaseEntity {
         const labels = {
             technical: "Técnico",
             billing: "Facturación",
-            device: "Dispositivo",
+            device: "Dispositivos",
             incident: "Incidente",
         };
 
