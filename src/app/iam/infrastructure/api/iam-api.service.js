@@ -1,5 +1,5 @@
-import { ApiClientService } from "../../../shared/infrastructure/http/api-client.service";
 import { AuthSessionService } from "../../../shared/application/services/auth-session.service";
+import { LocalPlatformDataService } from "../../../shared/infrastructure/data/local-platform-data.service";
 
 function normalizeUser(user) {
     if (!user) return null;
@@ -39,32 +39,31 @@ function normalizeAccessProfile(profile) {
 }
 
 export class IamApiService {
-    async signIn(payload) {
-        const users = await ApiClientService.get("/users", {
-            email: payload.email,
-            password: payload.password,
+    async signIn(credentials) {
+        const users = LocalPlatformDataService.list("users", {
+            email: credentials.email,
+            password: credentials.password,
         });
 
         const user = users[0];
 
         if (!user) {
-            throw new Error("Correo o contraseña incorrectos.");
+            throw new Error("Correo o contrasena incorrectos.");
         }
 
         if (user.status !== "active") {
-            throw new Error("La cuenta no está activa.");
+            throw new Error("La cuenta no esta activa.");
         }
 
-        const accessProfiles = await ApiClientService.get("/accessProfiles", {
-            id: user.accessProfileId,
-        });
-
-        const accessProfile = accessProfiles[0] || null;
+        const accessProfile = LocalPlatformDataService.getById(
+            "accessProfiles",
+            user.accessProfileId
+        );
 
         const session = {
             id: `SESSION-${Date.now()}`,
             userId: user.id,
-            token: `fake-token-${Date.now()}`,
+            token: `session-token-${Date.now()}`,
             isActive: true,
             createdAt: new Date().toISOString(),
         };
@@ -75,40 +74,37 @@ export class IamApiService {
             user: normalizeUser(user),
             accessProfile: normalizeAccessProfile(accessProfile),
             session,
-            message: "Inicio de sesión correcto.",
+            message: "Inicio de sesion correcto.",
         };
     }
 
-    async signUp(payload) {
-        const existingUsers = await ApiClientService.get("/users", {
-            email: payload.email,
+    async signUp(account) {
+        const existingUsers = LocalPlatformDataService.list("users", {
+            email: account.email,
         });
 
         if (existingUsers.length > 0) {
             throw new Error("Ya existe una cuenta registrada con este correo.");
         }
 
-        const user = await ApiClientService.post("/users", {
-            fullName: payload.fullName,
-            email: payload.email,
-            phone: payload.phone,
-            password: payload.password,
+        const user = LocalPlatformDataService.create("users", {
+            fullName: account.fullName,
+            email: account.email,
+            phone: account.phone,
+            password: account.password,
             status: "active",
             accessProfileId: "PROFILE-OWNER",
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
         });
 
-        const accessProfiles = await ApiClientService.get("/accessProfiles", {
-            id: "PROFILE-OWNER",
-        });
-
-        const accessProfile = accessProfiles[0] || null;
+        const accessProfile = LocalPlatformDataService.getById(
+            "accessProfiles",
+            "PROFILE-OWNER"
+        );
 
         const session = {
             id: `SESSION-${Date.now()}`,
             userId: user.id,
-            token: `fake-token-${Date.now()}`,
+            token: `session-token-${Date.now()}`,
             isActive: true,
             createdAt: new Date().toISOString(),
         };
@@ -123,9 +119,9 @@ export class IamApiService {
         };
     }
 
-    async recoverPassword(payload) {
-        const users = await ApiClientService.get("/users", {
-            email: payload.email,
+    async recoverPassword(account) {
+        const users = LocalPlatformDataService.list("users", {
+            email: account.email,
         });
 
         if (users.length === 0) {
@@ -134,7 +130,7 @@ export class IamApiService {
 
         return {
             success: true,
-            message: `Se enviaron instrucciones de recuperación a ${payload.email}.`,
+            message: `Se enviaron instrucciones de recuperacion a ${account.email}.`,
         };
     }
 
@@ -143,7 +139,7 @@ export class IamApiService {
 
         return {
             success: true,
-            message: "Sesión cerrada correctamente.",
+            message: "Sesion cerrada correctamente.",
         };
     }
 
@@ -154,7 +150,7 @@ export class IamApiService {
             return null;
         }
 
-        const user = await ApiClientService.get(`/users/${currentUser.id}`);
+        const user = LocalPlatformDataService.getById("users", currentUser.id);
 
         AuthSessionService.setCurrentUser(normalizeUser(user));
 
@@ -168,11 +164,12 @@ export class IamApiService {
             return null;
         }
 
-        const profiles = await ApiClientService.get("/accessProfiles", {
-            id: currentUser.accessProfileId,
-        });
+        const profile = LocalPlatformDataService.getById(
+            "accessProfiles",
+            currentUser.accessProfileId
+        );
 
-        return normalizeAccessProfile(profiles[0] || null);
+        return normalizeAccessProfile(profile);
     }
 
     async getSession() {
@@ -185,27 +182,97 @@ export class IamApiService {
         return {
             id: `SESSION-${currentUser.id}`,
             userId: currentUser.id,
-            token: "fake-token-current-session",
+            token: "session-token-current",
             isActive: true,
             canAccess: true,
         };
     }
 
-    async updateProfile(payload) {
+    async updateProfile(profile) {
         const currentUser = AuthSessionService.getCurrentUser();
 
         if (!currentUser) {
-            throw new Error("No hay sesión activa.");
+            throw new Error("No hay sesion activa.");
         }
 
-        const updatedUser = await ApiClientService.patch(`/users/${currentUser.id}`, {
-            fullName: payload.fullName,
-            phone: payload.phone,
-            updatedAt: new Date().toISOString(),
+        const updatedUser = LocalPlatformDataService.update("users", currentUser.id, {
+            fullName: profile.fullName,
+            phone: profile.phone,
         });
 
         AuthSessionService.setCurrentUser(normalizeUser(updatedUser));
 
         return normalizeUser(updatedUser);
+    }
+
+    async requestEmailChange(payload) {
+        const currentUser = AuthSessionService.getCurrentUser();
+        const newEmail = String(payload.newEmail || "").trim().toLowerCase();
+
+        if (!currentUser) {
+            throw new Error("No hay sesion activa.");
+        }
+
+        if (!newEmail || !newEmail.includes("@")) {
+            throw new Error("Ingresa un correo electronico valido.");
+        }
+
+        if (newEmail === String(currentUser.email || "").toLowerCase()) {
+            throw new Error("El correo nuevo debe ser diferente al actual.");
+        }
+
+        const existingUsers = LocalPlatformDataService
+            .list("users", { email: newEmail })
+            .filter((user) => user.id !== currentUser.id);
+
+        if (existingUsers.length > 0) {
+            throw new Error("Ya existe una cuenta registrada con ese correo.");
+        }
+
+        LocalPlatformDataService.update("users", currentUser.id, {
+            pendingEmail: newEmail,
+            emailChangeStatus: "pending_confirmation",
+            emailChangeRequestedAt: new Date().toISOString(),
+        });
+
+        return {
+            success: true,
+            message: `Se envio un correo de confirmacion a ${newEmail}.`,
+        };
+    }
+
+    async changePassword(payload) {
+        const currentUser = AuthSessionService.getCurrentUser();
+
+        if (!currentUser) {
+            throw new Error("No hay sesion activa.");
+        }
+
+        const currentPassword = String(payload.currentPassword || "");
+        const newPassword = String(payload.newPassword || "");
+
+        if (!currentPassword || !newPassword) {
+            throw new Error("Completa la contrasena actual y la nueva contrasena.");
+        }
+
+        if (newPassword.length < 6) {
+            throw new Error("La nueva contrasena debe tener al menos 6 caracteres.");
+        }
+
+        const user = LocalPlatformDataService.getById("users", currentUser.id);
+
+        if (!user || user.password !== currentPassword) {
+            throw new Error("La contrasena actual no coincide.");
+        }
+
+        LocalPlatformDataService.update("users", currentUser.id, {
+            password: newPassword,
+            passwordChangedAt: new Date().toISOString(),
+        });
+
+        return {
+            success: true,
+            message: "Contrasena actualizada correctamente.",
+        };
     }
 }
