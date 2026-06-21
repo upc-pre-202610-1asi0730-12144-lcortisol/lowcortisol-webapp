@@ -1,5 +1,5 @@
 <template>
-  <nav class="bottom-navigation" aria-label="Navegación principal">
+  <nav class="bottom-navigation" aria-label="Navegacion principal">
     <RouterLink
         v-for="item in items"
         :key="item.name"
@@ -12,7 +12,7 @@
       </span>
 
       <span class="bottom-navigation__label">
-        {{ t(item.labelKey) }}
+        {{ item.label }}
       </span>
     </RouterLink>
   </nav>
@@ -20,39 +20,45 @@
 
 <script setup>
 import { useRoute } from "vue-router";
-import { useTranslation } from "../../../application/services/translation.service";
 
 const route = useRoute();
-const { t } = useTranslation();
 
 const items = [
   {
     name: "dashboard",
-    labelKey: "nav.dashboard",
-    icon: "⌂",
+    label: "Panel",
+    icon: "P",
     to: {
       name: "dashboard",
     },
   },
   {
     name: "sites",
-    labelKey: "nav.sites",
-    icon: "⌘",
+    label: "Ubicacion",
+    icon: "U",
     to: {
       name: "sites",
     },
   },
   {
+    name: "valves",
+    label: "Dispositivos",
+    icon: "V",
+    to: {
+      name: "valves",
+    },
+  },
+  {
     name: "devices",
-    labelKey: "nav.devices",
-    icon: "◈",
+    label: "Conductos",
+    icon: "C",
     to: {
       name: "devices",
     },
   },
   {
     name: "alerts",
-    labelKey: "nav.alerts",
+    label: "Alertas",
     icon: "!",
     to: {
       name: "alerts",
@@ -60,34 +66,18 @@ const items = [
   },
   {
     name: "reports",
-    labelKey: "nav.reports",
-    icon: "▣",
+    label: "Reportes",
+    icon: "R",
     to: {
       name: "reports",
     },
   },
   {
-    name: "plans",
-    labelKey: "nav.plans",
-    icon: "◇",
-    to: {
-      name: "plans",
-    },
-  },
-  {
     name: "support",
-    labelKey: "nav.support",
+    label: "Soporte",
     icon: "?",
     to: {
       name: "support",
-    },
-  },
-  {
-    name: "profile",
-    labelKey: "nav.profile",
-    icon: "●",
-    to: {
-      name: "profile",
     },
   },
 ];
@@ -101,7 +91,7 @@ const items = [
   bottom: 0;
   z-index: 30;
   display: grid;
-  grid-template-columns: repeat(8, minmax(0, 1fr));
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 8px;
   min-height: var(--bottom-nav-height);
   padding: 10px 14px;
@@ -116,6 +106,7 @@ const items = [
   justify-content: center;
   align-items: center;
   gap: 4px;
+  min-width: 0;
   border: 2px solid transparent;
   border-radius: var(--radius-md);
   color: var(--color-text-muted);
@@ -130,14 +121,25 @@ const items = [
 }
 
 .bottom-navigation__icon {
-  font-size: 17px;
+  display: grid;
+  width: 20px;
+  height: 20px;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--color-surface-soft);
+  font-size: 11px;
   line-height: 1;
 }
 
 .bottom-navigation__label {
-  font-size: 10px;
+  overflow: hidden;
+  max-width: 100%;
+  font-size: 9.5px;
+  line-height: 1.05;
+  letter-spacing: 0;
   text-transform: uppercase;
-  letter-spacing: 0.02em;
+  text-align: center;
+  white-space: normal;
 }
 
 @media (max-width: 900px) {
