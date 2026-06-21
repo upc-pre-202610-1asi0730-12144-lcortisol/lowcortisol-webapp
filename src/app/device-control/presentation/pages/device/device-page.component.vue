@@ -31,6 +31,21 @@
         <p class="summary-number">{{ state.summary.closedValves }}</p>
         <p class="summary-label">{{ t('deviceControl.devices.closedValves') }}</p>
       </UiCard>
+
+      <UiCard :title="t('deviceControl.devices.openValves')" compact>
+        <p class="summary-number">{{ state.summary.openValves }}</p>
+        <p class="summary-label">{{ t('deviceControl.devices.openValves') }}</p>
+      </UiCard>
+
+      <UiCard :title="t('deviceControl.devices.commandsExecuted')" compact>
+        <p class="summary-number">{{ state.summary.commandsExecuted }}</p>
+        <p class="summary-label">{{ t('deviceControl.devices.commandsExecuted') }}</p>
+      </UiCard>
+
+      <UiCard :title="t('deviceControl.devices.incidentMitigations')" compact>
+        <p class="summary-number">{{ state.summary.incidentMitigations || 0 }}</p>
+        <p class="summary-label">{{ t('deviceControl.devices.incidentMitigations') }}</p>
+      </UiCard>
     </section>
 
     <section class="grid grid-2">
@@ -41,6 +56,10 @@
 
         <div v-else-if="state.error" class="error-state">
           {{ state.error }}
+        </div>
+
+        <div v-else-if="state.devices.length === 0" class="empty-state">
+          {{ t('deviceControl.devices.noDevices') }}
         </div>
 
         <div v-else class="device-list">
@@ -59,7 +78,10 @@
           <div class="detail-header">
             <div>
               <h3>{{ selectedDevice.name }}</h3>
-              <p>{{ getDeviceTypeLabel(selectedDevice.type) }} · {{ selectedDevice.siteId }}</p>
+              <p>
+                {{ getDeviceTypeLabel(selectedDevice.type) }}
+                <span v-if="selectedDevice.physicalPath"> - {{ selectedDevice.physicalPath }}</span>
+              </p>
             </div>
 
             <span class="badge" :class="selectedDevice.isOnline ? 'badge-success' : 'badge-warning'">
@@ -68,6 +90,11 @@
           </div>
 
           <div class="metric-list">
+            <div class="metric-row">
+              <span>{{ t('deviceControl.devices.physicalLocation') }}</span>
+              <strong>{{ selectedDevice.physicalPath || selectedDevice.siteName }}</strong>
+            </div>
+
             <div class="metric-row">
               <span>{{ t('deviceControl.devices.linkedSensorsCount') }}</span>
               <strong>{{ selectedDevice.sensors.length }}</strong>
@@ -131,27 +158,32 @@
       </UiCard>
     </section>
 
-    <section class="devices-bottom">
+    <section class="grid grid-2 devices-bottom">
       <UiCard :title="t('deviceControl.devices.recentCommands')">
-        <div v-if="state.commands.length === 0" class="empty-state">
+        <div v-if="selectedDeviceCommands.length === 0" class="empty-state">
           {{ t('deviceControl.devices.noCommands') }}
         </div>
 
         <div v-else class="command-list">
-          <div
-              v-for="command in state.commands"
+          <DeviceCommandCard
+              v-for="command in selectedDeviceCommands"
               :key="command.id"
-              class="command-item"
-          >
-            <div>
-              <strong>{{ getCommandLabel(command.commandType) }}</strong>
-              <span>{{ command.deviceId }}</span>
-            </div>
+              :command="command"
+          />
+        </div>
+      </UiCard>
 
-            <span class="badge badge-success">
-              {{ getCommandStatusLabel(command.status) }}
-            </span>
-          </div>
+      <UiCard :title="t('deviceControl.devices.valveOperations')">
+        <div v-if="selectedDeviceValveOperations.length === 0" class="empty-state">
+          {{ t('deviceControl.devices.noValveOperations') }}
+        </div>
+
+        <div v-else class="command-list">
+          <ValveOperationCard
+              v-for="operation in selectedDeviceValveOperations"
+              :key="operation.id"
+              :operation="operation"
+          />
         </div>
       </UiCard>
     </section>
@@ -164,9 +196,11 @@ import { computed, onMounted } from "vue";
 import AppLayout from "../../../../shared/presentation/components/app-layout/app-layout.component.vue";
 import UiCard from "../../../../shared/presentation/components/ui-card/ui-card.component.vue";
 
+import DeviceCommandCard from "../../components/device-command-card/device-command-card.component.vue";
 import DeviceCard from "../../components/device-card/device-card.component.vue";
 import SensorCard from "../../components/sensor-card/sensor-card.component.vue";
 import ValveControl from "../../components/valve-control/valve-control.component.vue";
+import ValveOperationCard from "../../components/valve-operation-card/valve-operation-card.component.vue";
 
 import { useDeviceControlStore } from "../../../application/store/device-control.store";
 import { useTranslation } from "../../../../shared/application/services/translation.service";
@@ -176,6 +210,8 @@ const {
   loadDevicePage,
   selectDevice,
   getSelectedDevice,
+  getSelectedDeviceCommands,
+  getSelectedDeviceValveOperations,
   createDevice,
   linkSensor,
   closeValve,
@@ -189,6 +225,8 @@ const selectedDevice = computed(() => getSelectedDevice());
 
 const selectedDeviceSensors = computed(() => selectedDevice.value?.sensors ?? []);
 const selectedDeviceValves = computed(() => selectedDevice.value?.valves ?? []);
+const selectedDeviceCommands = computed(() => getSelectedDeviceCommands().slice(0, 6));
+const selectedDeviceValveOperations = computed(() => getSelectedDeviceValveOperations().slice(0, 6));
 
 onMounted(async () => {
   await loadDevicePage();
@@ -196,9 +234,12 @@ onMounted(async () => {
 
 async function handleCreateDevice() {
   const nextNumber = state.summary.totalDevices + 1;
+  const targetDevice = selectedDevice.value || state.devices[0] || null;
 
   await createDevice({
-    siteId: "SITE-001",
+    siteId: targetDevice?.siteId || "SITE-001",
+    roomId: targetDevice?.roomId || "",
+    deviceGroupId: targetDevice?.deviceGroupId || "",
     name: `${t('deviceControl.devices.additionalHub')} ${nextNumber}`,
     type: "hub",
     status: "online",
@@ -214,9 +255,11 @@ async function handleLinkSensor() {
   await linkSensor({
     deviceId: selectedDevice.value.id,
     siteId: selectedDevice.value.siteId,
+    roomId: selectedDevice.value.roomId,
+    deviceGroupId: selectedDevice.value.deviceGroupId,
     name: `${t('deviceControl.devices.linkedSensor')} ${nextNumber}`,
     resourceType: isGas ? "gas" : "water",
-    unit: isGas ? "m³" : "L",
+    unit: isGas ? "m3" : "L",
     threshold: isGas ? 120 : 300,
   });
 }
