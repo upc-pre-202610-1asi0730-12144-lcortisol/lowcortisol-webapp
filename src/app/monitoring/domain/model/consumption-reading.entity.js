@@ -5,11 +5,16 @@ export class ConsumptionReading extends BaseEntity {
                     id = null,
                     sessionId = "",
                     siteId = "",
+                    roomId = "",
+                    deviceGroupId = "",
+                    deviceId = "",
                     sensorId = "",
                     resourceType = "water",
                     value = 0,
                     unit = "L",
-                    recordedAt = new Date(),
+                    capturedAt = null,
+                    recordedAt = null,
+                    location = null,
                     status = "normal",
                     createdAt = null,
                     updatedAt = null,
@@ -18,11 +23,16 @@ export class ConsumptionReading extends BaseEntity {
 
         this.sessionId = sessionId;
         this.siteId = siteId;
+        this.roomId = roomId;
+        this.deviceGroupId = deviceGroupId;
+        this.deviceId = deviceId;
         this.sensorId = sensorId;
         this.resourceType = resourceType;
-        this.value = value;
+        this.value = Number(value || 0);
         this.unit = unit;
-        this.recordedAt = recordedAt ? new Date(recordedAt) : new Date();
+        this.capturedAt = new Date(capturedAt || recordedAt || new Date());
+        this.recordedAt = this.capturedAt;
+        this.location = location;
         this.status = status;
     }
 
@@ -36,22 +46,15 @@ export class ConsumptionReading extends BaseEntity {
         this.updateTimestamp();
     }
 
-    get resourceLabel() {
-        const labels = {
-            water: "Agua",
-            gas: "Gas",
-        };
+    get locationLabel() {
+        if (!this.location) return "";
 
-        return labels[this.resourceType] ?? "Recurso";
-    }
-
-    get statusLabel() {
-        const labels = {
-            normal: "Normal",
-            warning: "Advertencia",
-            critical: "Crítico",
-        };
-
-        return labels[this.status] ?? "Sin estado";
+        return [
+            this.location.siteName,
+            this.location.roomName,
+            this.location.deviceGroupName,
+            this.location.deviceName,
+            this.location.sensorName,
+        ].filter(Boolean).join(" / ");
     }
 }
