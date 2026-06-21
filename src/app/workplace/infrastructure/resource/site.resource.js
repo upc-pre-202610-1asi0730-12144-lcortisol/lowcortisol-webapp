@@ -12,6 +12,8 @@ export class SiteResource extends BaseResource {
                     gasConsumption = 0,
                     activeSensors = 0,
                     activeIncidents = 0,
+                    latitude = null,
+                    longitude = null,
                     createdAt = null,
                     updatedAt = null,
                 } = {}) {
@@ -26,5 +28,7 @@ export class SiteResource extends BaseResource {
         this.gasConsumption = gasConsumption;
         this.activeSensors = activeSensors;
         this.activeIncidents = activeIncidents;
+        this.latitude = latitude;
+        this.longitude = longitude;
     }
 }
