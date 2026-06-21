@@ -29,7 +29,7 @@ export class KnowledgeArticle extends BaseEntity {
         const labels = {
             technical: "Técnico",
             billing: "Facturación",
-            device: "Dispositivo",
+            device: "Dispositivos",
             alerts: "Alertas",
         };
 
