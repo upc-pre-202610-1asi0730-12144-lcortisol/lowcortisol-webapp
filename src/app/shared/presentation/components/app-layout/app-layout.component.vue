@@ -10,6 +10,7 @@
     </main>
 
     <BottomNavigation v-if="!hideNavigation" />
+    <ContextSidePanel v-if="!hideNavigation" />
   </div>
 </template>
 
@@ -18,6 +19,7 @@ import { computed } from "vue";
 import { useRoute } from "vue-router";
 
 import BottomNavigation from "../bottom-navigation/bottom-navigation.component.vue";
+import ContextSidePanel from "../context-side-panel/context-side-panel.component.vue";
 import LanguageSwitcher from "../language-switcher/language-switcher.component.vue";
 
 const route = useRoute();

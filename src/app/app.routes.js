@@ -1,5 +1,6 @@
 import HomePage from "./shared/presentation/pages/home/home-page.component.vue";
 import AboutPage from "./shared/presentation/pages/about/about-page.component.vue";
+import SettingsPage from "./shared/presentation/pages/settings/settings-page.component.vue";
 import NotFoundPage from "./shared/presentation/pages/not-found/not-found-page.component.vue";
 
 import { iamRoutes } from "./iam/presentation/routes/iam.routes";
@@ -38,6 +39,14 @@ export const appRoutes = [
         path: "/about",
         name: "about",
         component: AboutPage,
+        meta: {
+            requiresAuth: true,
+        },
+    },
+    {
+        path: "/settings",
+        name: "settings",
+        component: SettingsPage,
         meta: {
             requiresAuth: true,
         },
