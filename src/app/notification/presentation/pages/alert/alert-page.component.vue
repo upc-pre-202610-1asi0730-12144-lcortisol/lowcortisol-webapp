@@ -1,314 +1,428 @@
 <template>
   <AppLayout>
-    <section class="page-header">
-      <div>
-        <h1 class="page-title">
-          {{ t('notifications.alerts.title') }}
-        </h1>
+    <PageHeader
+        :eyebrow="t('notifications.center.eyebrow')"
+        :title="t('notifications.center.title')"
+        :subtitle="t('notifications.center.subtitle')"
+    >
+      <template #actions>
+        <StatusBadge
+            v-if="state.usingFallback"
+            status="warning"
+            :label="t('notifications.center.fallbackMode')"
+        />
 
-        <p class="page-subtitle">
-          {{ t('notifications.alerts.subtitle') }}
-        </p>
+        <UiButton
+            variant="neutral"
+            :label="t('notifications.actions.refresh')"
+            :disabled="state.loading"
+            @click="loadNotificationCenter"
+        />
+      </template>
+    </PageHeader>
+
+    <section class="notification-metrics">
+      <MetricCard
+          :label="t('notifications.metrics.openAlerts')"
+          :value="state.summary.openAlerts"
+          :hint="t('notifications.metrics.openAlertsHint')"
+          status="warning"
+          :status-label="t('notifications.status.open')"
+      />
+      <MetricCard
+          :label="t('notifications.metrics.criticalAlerts')"
+          :value="state.summary.criticalAlerts"
+          :hint="t('notifications.metrics.criticalAlertsHint')"
+          status="critical"
+          :status-label="t('notifications.severity.critical')"
+      />
+      <MetricCard
+          :label="t('notifications.metrics.openIncidents')"
+          :value="state.summary.openIncidents"
+          :hint="t('notifications.metrics.openIncidentsHint')"
+          status="assigned"
+          :status-label="t('notifications.incidentStatus.open')"
+      />
+      <MetricCard
+          :label="t('notifications.metrics.activeChannels')"
+          :value="state.summary.channelsEnabled"
+          :hint="t('notifications.metrics.activeChannelsHint')"
+          status="active"
+          :status-label="t('notifications.channelStatus.active')"
+      />
+      <MetricCard
+          :label="t('notifications.metrics.pendingDeliveries')"
+          :value="state.summary.pendingDeliveries"
+          :hint="t('notifications.metrics.pendingDeliveriesHint')"
+          status="pending"
+          :status-label="t('notifications.deliveryStatus.pending')"
+      />
+    </section>
+
+    <LoadingState
+        v-if="state.loading"
+        :title="t('notifications.center.loadingTitle')"
+        :description="t('notifications.center.loadingDescription')"
+    />
+
+    <section v-else class="notification-console">
+      <p v-if="state.error" class="notification-message notification-message--error">
+        {{ t(state.error) }}
+      </p>
+
+      <p v-if="state.message" class="notification-message notification-message--success">
+        {{ t(state.message) }}
+      </p>
+
+      <div class="notification-main-grid">
+        <UiCard :title="t('notifications.center.openAlerts')" class="notification-panel">
+          <EmptyState
+              v-if="state.alerts.length === 0"
+              compact
+              :title="t('notifications.empty.noAlerts')"
+              :description="t('notifications.empty.noAlertsDescription')"
+          />
+
+          <div v-else class="notification-list">
+            <AlertCard
+                v-for="alert in state.alerts"
+                :key="alert.id"
+                :alert="alert"
+                :busy="state.saving"
+                @acknowledge="handleAcknowledgeAlert"
+                @resolve="handleResolveAlert"
+                @close="handleCloseAlert"
+                @create-incident="handleCreateIncidentFromAlert"
+            />
+          </div>
+        </UiCard>
+
+        <UiCard :title="t('notifications.center.openIncidents')" class="notification-panel">
+          <EmptyState
+              v-if="state.openIncidents.length === 0"
+              compact
+              :title="t('notifications.empty.noIncidents')"
+              :description="t('notifications.empty.noIncidentsDescription')"
+          />
+
+          <div v-else class="notification-list">
+            <IncidentCard
+                v-for="incident in state.openIncidents"
+                :key="incident.id"
+                :incident="incident"
+                :busy="state.saving || state.mitigationLoading"
+                @assign="openAssignModal"
+                @register-action="openIncidentActionModal"
+                @mitigate="openMitigationModal"
+                @resolve="handleResolveIncident"
+                @close="handleCloseIncident"
+            />
+          </div>
+        </UiCard>
       </div>
 
-      <button class="btn-primary" type="button" @click="handleCreateAlert">
-        {{ t('notifications.alerts.createAlert') }}
-      </button>
-    </section>
-
-    <section class="grid grid-3 alerts-summary">
-      <UiCard :title="t('notifications.alerts.registeredAlerts')" compact>
-        <p class="summary-number">{{ state.summary.totalAlerts }}</p>
-        <p class="summary-label">{{ t('notifications.alerts.registeredAlerts') }}</p>
-      </UiCard>
-
-      <UiCard :title="t('notifications.alerts.criticalAlerts')" compact>
-        <p class="summary-number">{{ state.summary.criticalAlerts }}</p>
-        <p class="summary-label">{{ t('notifications.alerts.criticalAlerts') }}</p>
-      </UiCard>
-
-      <UiCard :title="t('notifications.alerts.openIncidents')" compact>
-        <p class="summary-number">{{ state.summary.openIncidents }}</p>
-        <p class="summary-label">{{ t('notifications.alerts.openIncidents') }}</p>
-      </UiCard>
-    </section>
-
-    <section class="grid grid-2">
-      <UiCard :title="t('notifications.alerts.activeAlerts')">
-        <div v-if="state.loading" class="empty-state">
-          {{ t('notifications.alerts.loading') }}
-        </div>
-
-        <div v-else-if="state.error" class="error-state">
-          {{ state.error }}
-        </div>
-
-        <div v-else-if="state.alerts.length === 0" class="empty-state">
-          {{ t('notifications.alerts.noAlerts') }}
-        </div>
-
-        <div v-else class="alert-list">
-          <AlertCard
-              v-for="alert in state.alerts"
-              :key="alert.id"
-              :alert="alert"
-              @resolve="resolveAlert"
-              @close="closeAlert"
-              @send="sendAlert"
+      <div class="notification-support-grid">
+        <UiCard :title="t('notifications.center.notificationChannels')" class="notification-panel">
+          <EmptyState
+              v-if="state.channels.length === 0"
+              compact
+              :title="t('notifications.empty.noChannels')"
+              :description="t('notifications.empty.noChannelsDescription')"
+              :action-label="t('notifications.actions.createInAppChannel')"
+              @action="handleCreateInAppChannel"
           />
-        </div>
-      </UiCard>
 
-      <UiCard :title="t('notifications.alerts.configuredThresholds')">
-        <div v-if="state.thresholds.length === 0" class="empty-state">
-          {{ t('notifications.alerts.noThresholds') }}
-        </div>
+          <div v-else class="notification-list">
+            <NotificationChannelCard
+                v-for="channel in state.channels"
+                :key="channel.id"
+                :channel="channel"
+                :busy="state.saving"
+                @activate="activateChannel"
+                @deactivate="deactivateChannel"
+            />
+          </div>
+        </UiCard>
 
-        <div v-else class="threshold-list">
-          <ThresholdCard
-              v-for="threshold in state.thresholds"
-              :key="threshold.id"
-              :threshold="threshold"
+        <UiCard :title="t('notifications.center.deliveries')" class="notification-panel">
+          <EmptyState
+              v-if="recentDeliveries.length === 0"
+              compact
+              :title="t('notifications.empty.noDeliveries')"
+              :description="t('notifications.empty.noDeliveriesDescription')"
           />
-        </div>
 
-        <button class="btn-secondary full-button" type="button" @click="handleCreateThreshold">
-          {{ t('notifications.alerts.createThreshold') }}
-        </button>
-      </UiCard>
+          <div v-else class="delivery-list">
+            <AlertDeliveryCard
+                v-for="delivery in recentDeliveries"
+                :key="delivery.id"
+                :delivery="delivery"
+            />
+          </div>
+        </UiCard>
+      </div>
     </section>
 
-    <section class="grid grid-2 alerts-bottom">
-      <UiCard :title="t('notifications.alerts.incidents')">
-        <div v-if="state.incidents.length === 0" class="empty-state">
-          {{ t('notifications.alerts.noIncidents') }}
-        </div>
+    <AssignIncidentModal
+        :open="assignModalOpen"
+        :incident="selectedIncident"
+        @close="closeAssignModal"
+        @submit="handleAssignIncident"
+    />
 
-        <div v-else class="simple-list">
-          <div
-              v-for="incident in state.incidents"
-              :key="incident.id"
-              class="simple-item"
-          >
-            <div>
-              <strong>{{ incident.title }}</strong>
-              <span>{{ incident.description }}</span>
-            </div>
+    <IncidentActionModal
+        :open="incidentActionModalOpen"
+        @close="closeIncidentActionModal"
+        @submit="handleRegisterIncidentAction"
+    />
 
-            <span class="badge" :class="getPriorityClass(incident.priority)">
-              {{ getPriorityLabel(incident.priority) }}
-            </span>
-          </div>
-        </div>
-      </UiCard>
-
-      <UiCard :title="t('notifications.alerts.channelsAndDeliveries')">
-        <div class="metric-list">
-          <div class="metric-row">
-            <span>{{ t('notifications.alerts.enabledChannels') }}</span>
-            <strong>{{ state.summary.channelsEnabled }}</strong>
-          </div>
-
-          <div class="metric-row">
-            <span>{{ t('notifications.alerts.sentAlerts') }}</span>
-            <strong>{{ state.summary.deliveriesSent }}</strong>
-          </div>
-
-          <div class="metric-row">
-            <span>{{ t('notifications.alerts.activeThresholds') }}</span>
-            <strong>{{ state.summary.activeThresholds }}</strong>
-          </div>
-        </div>
-      </UiCard>
-    </section>
+    <IncidentMitigationModal
+        :open="mitigationModalOpen"
+        :incident="selectedIncident"
+        :valves="deviceControlState.valves"
+        :devices="deviceControlState.devices"
+        :busy="state.mitigationLoading"
+        @close="closeMitigationModal"
+        @submit="handleRequestIncidentMitigation"
+    />
   </AppLayout>
 </template>
 
 <script setup>
-import { onMounted } from "vue";
+import { computed, onMounted, ref } from "vue";
 
 import AppLayout from "../../../../shared/presentation/components/app-layout/app-layout.component.vue";
+import EmptyState from "../../../../shared/presentation/components/empty-state/empty-state.component.vue";
+import LoadingState from "../../../../shared/presentation/components/loading-state/loading-state.component.vue";
+import MetricCard from "../../../../shared/presentation/components/metric-card/metric-card.component.vue";
+import PageHeader from "../../../../shared/presentation/components/page-header/page-header.component.vue";
+import StatusBadge from "../../../../shared/presentation/components/status-badge/status-badge.component.vue";
+import UiButton from "../../../../shared/presentation/components/ui-button/ui-button.component.vue";
 import UiCard from "../../../../shared/presentation/components/ui-card/ui-card.component.vue";
 
 import AlertCard from "../../components/alert-card/alert-card.component.vue";
-import ThresholdCard from "../../components/threshold-card/threshold-card.component.vue";
+import AlertDeliveryCard from "../../components/alert-delivery-card/alert-delivery-card.component.vue";
+import AssignIncidentModal from "../../components/assign-incident-modal/assign-incident-modal.component.vue";
+import IncidentActionModal from "../../components/incident-action-modal/incident-action-modal.component.vue";
+import IncidentCard from "../../components/incident-card/incident-card.component.vue";
+import IncidentMitigationModal from "../../components/incident-mitigation-modal/incident-mitigation-modal.component.vue";
+import NotificationChannelCard from "../../components/notification-channel-card/notification-channel-card.component.vue";
 
 import { useNotificationStore } from "../../../application/store/notification.store";
+import { useDeviceControlStore } from "../../../../device-control/application/store/device-control.store";
 import { useTranslation } from "../../../../shared/application/services/translation.service";
 
 const {
   state,
-  loadAlertPage,
-  createAlert,
+  loadNotificationCenter,
+  acknowledgeAlert,
   resolveAlert,
   closeAlert,
-  createThreshold,
-  sendAlert,
+  createIncidentFromAlert,
+  assignIncident,
+  registerIncidentAction,
+  requestIncidentMitigation,
+  resolveIncident,
+  closeIncident,
+  createChannel,
+  activateChannel,
+  deactivateChannel,
 } = useNotificationStore();
 
+const {
+  state: deviceControlState,
+  loadDevicePage,
+} = useDeviceControlStore();
+
 const { t } = useTranslation();
+const assignModalOpen = ref(false);
+const incidentActionModalOpen = ref(false);
+const mitigationModalOpen = ref(false);
+const selectedIncidentId = ref(null);
+
+const selectedIncident = computed(() =>
+    state.openIncidents.find((incident) => incident.id === selectedIncidentId.value) || null
+);
+
+const recentDeliveries = computed(() =>
+    [...state.deliveries]
+        .sort((left, right) => {
+          const leftDate = left.sentAt || left.attemptedAt || left.createdAt;
+          const rightDate = right.sentAt || right.attemptedAt || right.createdAt;
+
+          return new Date(rightDate).getTime() - new Date(leftDate).getTime();
+        })
+        .slice(0, 6)
+);
 
 onMounted(async () => {
-  await loadAlertPage();
+  await Promise.all([
+    loadNotificationCenter(),
+    loadDevicePage(),
+  ]);
 });
 
-async function handleCreateAlert() {
-  const nextNumber = state.summary.totalAlerts + 1;
-  const isGas = nextNumber % 2 === 0;
-
-  await createAlert({
-    siteId: "SITE-001",
-    sensorId: `SEN-AUTO-${nextNumber}`,
-    resourceType: isGas ? "gas" : "water",
-    title: `${t('notifications.alerts.automaticAlert')} ${nextNumber}`,
-    description: t('notifications.alerts.automaticDescription'),
-    severity: isGas ? "critical" : "warning",
+async function handleAcknowledgeAlert(alertId) {
+  await acknowledgeAlert(alertId, {
+    acknowledgedBy: t("notifications.center.defaultOperator"),
   });
 }
 
-async function handleCreateThreshold() {
-  const nextNumber = state.summary.totalThresholds + 1;
-  const isGas = nextNumber % 2 === 0;
-
-  await createThreshold({
-    siteId: "SITE-001",
-    sensorId: `SEN-THR-${nextNumber}`,
-    resourceType: isGas ? "gas" : "water",
-    warningLimit: isGas ? 90 : 260,
-    criticalLimit: isGas ? 120 : 320,
-    unit: isGas ? "m³" : "L",
+async function handleResolveAlert(alertId) {
+  await resolveAlert(alertId, {
+    resolvedBy: t("notifications.center.defaultOperator"),
+    note: t("notifications.center.defaultResolution"),
   });
 }
 
-function getPriorityClass(priority) {
-  const classes = {
-    low: "badge-primary",
-    medium: "badge-warning",
-    high: "badge-danger",
-    critical: "badge-danger",
-  };
-
-  return classes[priority] ?? "badge-primary";
+async function handleCloseAlert(alertId) {
+  await closeAlert(alertId, {
+    closedBy: t("notifications.center.defaultOperator"),
+    note: t("notifications.center.defaultClosingNote"),
+  });
 }
 
-function getPriorityLabel(priority) {
-  const keys = {
-    low: "notifications.priority.low",
-    medium: "notifications.priority.medium",
-    high: "notifications.priority.high",
-    critical: "notifications.priority.critical",
-  };
+async function handleCreateIncidentFromAlert(alertId) {
+  await createIncidentFromAlert(alertId);
+}
 
-  return t(keys[priority] ?? "notifications.priority.unknown");
+function openAssignModal(incident) {
+  selectedIncidentId.value = incident.id;
+  assignModalOpen.value = true;
+}
+
+function closeAssignModal() {
+  assignModalOpen.value = false;
+}
+
+async function handleAssignIncident(payload) {
+  await assignIncident(selectedIncidentId.value, payload);
+  closeAssignModal();
+}
+
+function openIncidentActionModal(incident) {
+  selectedIncidentId.value = incident.id;
+  incidentActionModalOpen.value = true;
+}
+
+function closeIncidentActionModal() {
+  incidentActionModalOpen.value = false;
+}
+
+async function handleRegisterIncidentAction(payload) {
+  await registerIncidentAction(selectedIncidentId.value, payload);
+  closeIncidentActionModal();
+}
+
+function openMitigationModal(incident) {
+  selectedIncidentId.value = incident.id;
+  mitigationModalOpen.value = true;
+}
+
+function closeMitigationModal() {
+  mitigationModalOpen.value = false;
+}
+
+async function handleRequestIncidentMitigation(payload) {
+  await requestIncidentMitigation(selectedIncidentId.value, payload);
+  await loadDevicePage();
+  closeMitigationModal();
+}
+
+async function handleResolveIncident(incidentId) {
+  await resolveIncident(incidentId, {
+    resolvedBy: t("notifications.center.defaultOperator"),
+    resolution: t("notifications.center.defaultResolution"),
+  });
+}
+
+async function handleCloseIncident(incidentId) {
+  await closeIncident(incidentId, {
+    closedBy: t("notifications.center.defaultOperator"),
+    closingNote: t("notifications.center.defaultClosingNote"),
+  });
+}
+
+async function handleCreateInAppChannel() {
+  await createChannel({
+    name: t("notifications.center.inAppChannel"),
+    type: "in_app",
+    isActive: true,
+  });
 }
 </script>
 
 <style scoped>
-.alerts-summary {
-  margin-bottom: 20px;
+.notification-metrics {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 20px;
+  margin-bottom: 24px;
 }
 
-.alerts-bottom {
-  margin-top: 20px;
+.notification-console {
+  display: grid;
+  gap: 22px;
 }
 
-.summary-number {
-  color: var(--color-text);
-  font-size: 34px;
-  font-weight: 900;
-  line-height: 1;
-  margin: 0 0 8px;
+.notification-main-grid,
+.notification-support-grid {
+  display: grid;
+  gap: 20px;
 }
 
-.summary-label {
-  color: var(--color-text-muted);
-  margin: 0;
+.notification-main-grid {
+  grid-template-columns: minmax(0, 1.06fr) minmax(0, 1fr);
+  align-items: start;
 }
 
-.empty-state,
-.error-state {
-  border: 1px dashed var(--color-border);
+.notification-support-grid {
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+  align-items: start;
+}
+
+.notification-panel {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.notification-list,
+.delivery-list {
+  display: grid;
+  gap: 14px;
+}
+
+.notification-message {
+  grid-column: 1 / -1;
   border-radius: var(--radius-md);
-  color: var(--color-text-muted);
-  padding: 18px;
-}
-
-.error-state {
-  color: var(--color-danger);
-  background: #fef2f2;
-  border-color: #fecaca;
-}
-
-.alert-list,
-.threshold-list,
-.simple-list {
-  display: grid;
-  gap: 14px;
-}
-
-.full-button {
-  width: 100%;
-  margin-top: 18px;
-}
-
-.simple-item {
-  display: flex;
-  justify-content: space-between;
-  gap: 14px;
-  border-bottom: 1px solid var(--color-border);
-  padding-bottom: 14px;
-}
-
-.simple-item:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
-}
-
-.simple-item strong {
-  display: block;
-  color: var(--color-text);
-  margin-bottom: 4px;
-}
-
-.simple-item span {
-  color: var(--color-text-muted);
-  margin: 0;
-}
-
-.metric-list {
-  display: grid;
-}
-
-.metric-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  border-bottom: 1px solid var(--color-border);
-  padding: 14px 0;
-}
-
-.metric-row:first-child {
-  padding-top: 0;
-}
-
-.metric-row:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
-}
-
-.metric-row span {
-  color: var(--color-text-muted);
-}
-
-.metric-row strong {
-  color: var(--color-text);
   font-weight: 900;
+  margin: 0;
+  padding: 14px 16px;
 }
 
-@media (max-width: 700px) {
-  .simple-item,
-  .metric-row {
-    flex-direction: column;
+.notification-message--success {
+  border: 1px solid #bbf7d0;
+  background: #ecfdf5;
+  color: var(--color-success);
+}
+
+.notification-message--error {
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: var(--color-danger);
+}
+
+@media (max-width: 1180px) {
+  .notification-metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 980px) {
+  .notification-main-grid,
+  .notification-support-grid,
+  .notification-metrics {
+    grid-template-columns: 1fr;
   }
 }
 </style>

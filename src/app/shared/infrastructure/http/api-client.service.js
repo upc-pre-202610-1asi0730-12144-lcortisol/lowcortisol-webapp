@@ -1,7 +1,7 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://lowcortisol-platform.onrender.com";
+import { API_CONFIG } from "../api/api.config";
 
 function buildUrl(path, query = {}) {
-    const url = new URL(`${API_BASE_URL}${path}`);
+    const url = new URL(`${API_CONFIG.baseUrl}${path}`);
 
     Object.entries(query).forEach(([key, value]) => {
         if (value !== undefined && value !== null && value !== "") {

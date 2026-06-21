@@ -5,11 +5,19 @@ export class IncidentResource extends BaseResource {
                     id = null,
                     alertId = "",
                     siteId = "",
-                    title = "",
-                    description = "",
+                    roomId = "",
+                    deviceGroupId = "",
+                    deviceId = "",
+                    sensorId = "",
                     priority = "medium",
                     status = "open",
+                    title = "",
+                    description = "",
                     assignedTo = "",
+                    resolvedAt = null,
+                    closedAt = null,
+                    actions = [],
+                    assignments = [],
                     createdAt = null,
                     updatedAt = null,
                 } = {}) {
@@ -17,10 +25,18 @@ export class IncidentResource extends BaseResource {
 
         this.alertId = alertId;
         this.siteId = siteId;
-        this.title = title;
-        this.description = description;
+        this.roomId = roomId;
+        this.deviceGroupId = deviceGroupId;
+        this.deviceId = deviceId;
+        this.sensorId = sensorId;
         this.priority = priority;
         this.status = status;
+        this.title = title;
+        this.description = description;
         this.assignedTo = assignedTo;
+        this.resolvedAt = resolvedAt;
+        this.closedAt = closedAt;
+        this.actions = actions;
+        this.assignments = assignments;
     }
 }

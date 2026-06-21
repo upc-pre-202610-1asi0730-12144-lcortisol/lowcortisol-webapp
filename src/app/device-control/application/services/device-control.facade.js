@@ -5,6 +5,10 @@ export class DeviceControlFacade {
         this.deviceControlApiService = new DeviceControlApiService();
     }
 
+    isUsingFallback() {
+        return this.deviceControlApiService.isUsingFallback();
+    }
+
     async getDevices() {
         return this.deviceControlApiService.getDevices();
     }
@@ -19,6 +23,22 @@ export class DeviceControlFacade {
 
     async createDevice(payload) {
         return this.deviceControlApiService.createDevice(payload);
+    }
+
+    async createConduit(payload) {
+        return this.deviceControlApiService.createConduit(payload);
+    }
+
+    async removeConduit(conduitId) {
+        return this.deviceControlApiService.removeConduit(conduitId);
+    }
+
+    async activateConduit(conduitId) {
+        return this.deviceControlApiService.activateConduit(conduitId);
+    }
+
+    async deactivateConduit(conduitId) {
+        return this.deviceControlApiService.deactivateConduit(conduitId);
     }
 
     async getSensors() {
@@ -43,6 +63,22 @@ export class DeviceControlFacade {
 
     async getCommands() {
         return this.deviceControlApiService.getCommands();
+    }
+
+    async getDeviceCommandsByDeviceId(deviceId) {
+        return this.deviceControlApiService.getDeviceCommandsByDeviceId(deviceId);
+    }
+
+    async getValveOperationsByValveId(valveId) {
+        return this.deviceControlApiService.getValveOperationsByValveId(valveId);
+    }
+
+    async getValveOperationsByIncidentId(incidentId) {
+        return this.deviceControlApiService.getValveOperationsByIncidentId(incidentId);
+    }
+
+    async getMitigationSummary() {
+        return this.deviceControlApiService.getMitigationSummary();
     }
 
     async getSummary() {

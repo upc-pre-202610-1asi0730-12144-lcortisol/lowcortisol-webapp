@@ -5,11 +5,19 @@ export class Incident extends BaseEntity {
                     id = null,
                     alertId = "",
                     siteId = "",
+                    roomId = "",
+                    deviceGroupId = "",
+                    deviceId = "",
+                    sensorId = "",
                     title = "",
                     description = "",
                     priority = "medium",
                     status = "open",
                     assignedTo = "",
+                    actions = [],
+                    assignments = [],
+                    resolvedAt = null,
+                    closedAt = null,
                     createdAt = null,
                     updatedAt = null,
                 } = {}) {
@@ -17,48 +25,45 @@ export class Incident extends BaseEntity {
 
         this.alertId = alertId;
         this.siteId = siteId;
+        this.roomId = roomId;
+        this.deviceGroupId = deviceGroupId;
+        this.deviceId = deviceId;
+        this.sensorId = sensorId;
         this.title = title;
         this.description = description;
         this.priority = priority;
         this.status = status;
         this.assignedTo = assignedTo;
+        this.actions = actions;
+        this.assignments = assignments;
+        this.resolvedAt = resolvedAt ? new Date(resolvedAt) : null;
+        this.closedAt = closedAt ? new Date(closedAt) : null;
     }
 
-    assignTo(userId) {
-        this.assignedTo = userId;
+    assignTo(assigneeName) {
+        this.assignedTo = assigneeName;
         this.status = "assigned";
+        this.updateTimestamp();
+    }
+
+    markInProgress() {
+        this.status = "in_progress";
         this.updateTimestamp();
     }
 
     resolve() {
         this.status = "resolved";
+        this.resolvedAt = new Date();
         this.updateTimestamp();
     }
 
     close() {
         this.status = "closed";
+        this.closedAt = new Date();
         this.updateTimestamp();
     }
 
-    get priorityLabel() {
-        const labels = {
-            low: "Baja",
-            medium: "Media",
-            high: "Alta",
-            critical: "Crítica",
-        };
-
-        return labels[this.priority] ?? "Sin prioridad";
-    }
-
-    get statusLabel() {
-        const labels = {
-            open: "Abierto",
-            assigned: "Asignado",
-            resolved: "Resuelto",
-            closed: "Cerrado",
-        };
-
-        return labels[this.status] ?? "Sin estado";
+    get activeAssignment() {
+        return this.assignments.find((assignment) => assignment.isActive) || null;
     }
 }

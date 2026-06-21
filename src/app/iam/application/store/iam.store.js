@@ -108,6 +108,44 @@ async function updateProfile(payload) {
     }
 }
 
+async function requestEmailChange(payload) {
+    state.loading = true;
+    state.error = null;
+    state.message = "";
+
+    try {
+        const result = await iamFacade.requestEmailChange(payload);
+
+        state.message = result.message;
+
+        return result;
+    } catch (error) {
+        state.error = error.message || "No se pudo solicitar el cambio de correo.";
+        throw error;
+    } finally {
+        state.loading = false;
+    }
+}
+
+async function changePassword(payload) {
+    state.loading = true;
+    state.error = null;
+    state.message = "";
+
+    try {
+        const result = await iamFacade.changePassword(payload);
+
+        state.message = result.message;
+
+        return result;
+    } catch (error) {
+        state.error = error.message || "No se pudo actualizar la contrasena.";
+        throw error;
+    } finally {
+        state.loading = false;
+    }
+}
+
 async function signOut() {
     state.loading = true;
     state.error = null;
@@ -136,6 +174,8 @@ export function useIamStore() {
         signUp,
         recoverPassword,
         updateProfile,
+        requestEmailChange,
+        changePassword,
         signOut,
     };
 }

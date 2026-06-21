@@ -3,7 +3,7 @@ import { AuthSessionService } from "../../../shared/application/services/auth-se
 
 export class IamFacade {
     constructor() {
-        this.iamApiService = new IamApiService({ useMock: true });
+        this.iamApiService = new IamApiService();
     }
 
     async signIn(payload) {
@@ -52,5 +52,13 @@ export class IamFacade {
         AuthSessionService.setCurrentUser(user);
 
         return user;
+    }
+
+    async requestEmailChange(payload) {
+        return this.iamApiService.requestEmailChange(payload);
+    }
+
+    async changePassword(payload) {
+        return this.iamApiService.changePassword(payload);
     }
 }

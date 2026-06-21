@@ -6,6 +6,7 @@ export class ConsumptionReportAssembler extends BaseAssembler {
     toEntity(resource) {
         return new ConsumptionReport({
             id: resource.id,
+            title: resource.title,
             siteId: resource.siteId,
             period: resource.period,
             startDate: resource.startDate,
@@ -22,6 +23,7 @@ export class ConsumptionReportAssembler extends BaseAssembler {
     toResource(entity) {
         return new ConsumptionReportResource({
             id: entity.id,
+            title: entity.title,
             siteId: entity.siteId,
             period: entity.period,
             startDate: entity.startDate,

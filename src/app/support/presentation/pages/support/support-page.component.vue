@@ -16,6 +16,10 @@
       </button>
     </section>
 
+    <div v-if="state.message" class="success-state">
+      {{ state.message }}
+    </div>
+
     <section class="grid grid-3 support-summary">
       <UiCard :title="t('support.page.tickets')" compact>
         <p class="summary-number">{{ state.summary.totalTickets }}</p>
@@ -41,6 +45,10 @@
 
         <div v-else-if="state.error" class="error-state">
           {{ state.error }}
+        </div>
+
+        <div v-else-if="state.tickets.length === 0" class="empty-state">
+          {{ t('support.page.noTickets') }}
         </div>
 
         <div v-else class="ticket-list">
@@ -107,17 +115,59 @@
       </UiCard>
     </section>
 
-    <section class="support-bottom">
+    <section class="grid grid-2 support-bottom">
       <UiCard :title="t('support.page.helpArticles')">
-        <div class="article-list">
+        <div v-if="state.articles.length === 0" class="empty-state">
+          {{ t('support.page.noArticles') }}
+        </div>
+
+        <div v-else class="article-list">
           <KnowledgeArticleCard
               v-for="article in state.articles"
               :key="article.id"
               :article="article"
+              @open="handleOpenArticle"
           />
         </div>
       </UiCard>
+
+      <UiCard :title="t('support.page.agents')">
+        <div v-if="state.agents.length === 0" class="empty-state">
+          {{ t('support.page.noAgents') }}
+        </div>
+
+        <div v-else class="agent-list">
+          <article
+              v-for="agent in state.agents"
+              :key="agent.id"
+              class="agent-item"
+          >
+            <div>
+              <strong>{{ agent.fullName }}</strong>
+              <span>{{ agent.specialty }}</span>
+            </div>
+
+            <span class="badge" :class="getAgentStatusClass(agent.status)">
+              {{ getAgentStatusLabel(agent.status) }}
+            </span>
+          </article>
+        </div>
+      </UiCard>
     </section>
+
+    <CreateSupportTicketModal
+        :open="ticketModalOpen"
+        :initial-ticket="ticketModalInitial"
+        @close="ticketModalOpen = false"
+        @submit="handleSubmitTicket"
+    />
+
+    <KnowledgeArticleDetailModal
+        :open="articleModalOpen"
+        :article="selectedArticle"
+        @close="articleModalOpen = false"
+        @create-ticket="handleCreateTicketFromArticle"
+    />
   </AppLayout>
 </template>
 
@@ -129,6 +179,8 @@ import UiCard from "../../../../shared/presentation/components/ui-card/ui-card.c
 
 import SupportTicketCard from "../../components/support-ticket-card/support-ticket-card.component.vue";
 import KnowledgeArticleCard from "../../components/knowledge-article-card/knowledge-article-card.component.vue";
+import CreateSupportTicketModal from "../../components/create-support-ticket-modal/create-support-ticket-modal.component.vue";
+import KnowledgeArticleDetailModal from "../../components/knowledge-article-detail-modal/knowledge-article-detail-modal.component.vue";
 
 import { useSupportStore } from "../../../application/store/support.store";
 import { useTranslation } from "../../../../shared/application/services/translation.service";
@@ -148,6 +200,10 @@ const {
 const { t } = useTranslation();
 
 const messageContent = ref("");
+const ticketModalOpen = ref(false);
+const ticketModalInitial = ref({});
+const articleModalOpen = ref(false);
+const selectedArticle = ref(null);
 
 const selectedTicket = computed(() => getSelectedTicket());
 const selectedConversation = computed(() => getSelectedConversation());
@@ -157,15 +213,13 @@ onMounted(async () => {
 });
 
 async function handleCreateTicket() {
-  const nextNumber = state.summary.totalTickets + 1;
+  ticketModalInitial.value = {};
+  ticketModalOpen.value = true;
+}
 
-  await createTicket({
-    userId: "USR-001",
-    siteId: "SITE-001",
-    title: `${t('support.page.supportRequest')} ${nextNumber}`,
-    description: t('support.page.supportRequestDescription'),
-    category: nextNumber % 2 === 0 ? "device" : "technical",
-  });
+async function handleSubmitTicket(ticketRequest) {
+  await createTicket(ticketRequest);
+  ticketModalOpen.value = false;
 }
 
 async function handleSendMessage() {
@@ -173,6 +227,21 @@ async function handleSendMessage() {
 
   await sendMessage(messageContent.value);
   messageContent.value = "";
+}
+
+function handleOpenArticle(article) {
+  selectedArticle.value = article;
+  articleModalOpen.value = true;
+}
+
+function handleCreateTicketFromArticle(article) {
+  articleModalOpen.value = false;
+  ticketModalInitial.value = {
+    title: `Ayuda: ${article.title}`,
+    description: `Necesito apoyo con este articulo: ${article.title}. ${article.summary}`,
+    category: article.category === "alerts" ? "incident" : article.category,
+  };
+  ticketModalOpen.value = true;
 }
 
 function getStatusLabel(status) {
@@ -194,6 +263,26 @@ function getSenderTypeLabel(senderType) {
   };
 
   return t(keys[senderType] ?? "support.sender.unknown");
+}
+
+function getAgentStatusClass(status) {
+  const classes = {
+    available: "badge-success",
+    busy: "badge-warning",
+    offline: "badge-danger",
+  };
+
+  return classes[status] ?? "badge-primary";
+}
+
+function getAgentStatusLabel(status) {
+  const keys = {
+    available: "support.status.available",
+    busy: "support.status.busy",
+    offline: "support.status.offline",
+  };
+
+  return t(keys[status] ?? "support.status.unknown");
 }
 </script>
 
@@ -220,11 +309,21 @@ function getSenderTypeLabel(senderType) {
 }
 
 .empty-state,
-.error-state {
+.error-state,
+.success-state {
   border: 1px dashed var(--color-border);
   border-radius: var(--radius-md);
   color: var(--color-text-muted);
   padding: 18px;
+}
+
+.success-state {
+  border-style: solid;
+  border-color: #bbf7d0;
+  background: #ecfdf5;
+  color: var(--color-success);
+  font-weight: 900;
+  margin-bottom: 20px;
 }
 
 .error-state {
@@ -235,9 +334,34 @@ function getSenderTypeLabel(senderType) {
 
 .ticket-list,
 .article-list,
+.agent-list,
 .conversation {
   display: grid;
   gap: 14px;
+}
+
+.agent-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 14px;
+}
+
+.agent-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.agent-item strong {
+  display: block;
+  color: var(--color-text);
+  font-weight: 900;
+  margin-bottom: 4px;
+}
+
+.agent-item span {
+  color: var(--color-text-muted);
 }
 
 .ticket-detail {
@@ -301,7 +425,8 @@ function getSenderTypeLabel(senderType) {
 
 @media (max-width: 700px) {
   .message-form,
-  .ticket-detail__header {
+  .ticket-detail__header,
+  .agent-item {
     grid-template-columns: 1fr;
     flex-direction: column;
   }

@@ -4,9 +4,10 @@ export class NotificationChannel extends BaseEntity {
     constructor({
                     id = null,
                     name = "",
-                    type = "email",
+                    type = "in_app",
                     destination = "",
-                    enabled = true,
+                    isActive = true,
+                    enabled = null,
                     createdAt = null,
                     updatedAt = null,
                 } = {}) {
@@ -15,27 +16,20 @@ export class NotificationChannel extends BaseEntity {
         this.name = name;
         this.type = type;
         this.destination = destination;
-        this.enabled = enabled;
+        this.isActive = enabled === null ? Boolean(isActive) : Boolean(enabled);
     }
 
     enable() {
-        this.enabled = true;
+        this.isActive = true;
         this.updateTimestamp();
     }
 
     disable() {
-        this.enabled = false;
+        this.isActive = false;
         this.updateTimestamp();
     }
 
-    get typeLabel() {
-        const labels = {
-            email: "Correo",
-            sms: "SMS",
-            whatsapp: "WhatsApp",
-            push: "Push",
-        };
-
-        return labels[this.type] ?? "Canal";
+    get enabled() {
+        return this.isActive;
     }
 }

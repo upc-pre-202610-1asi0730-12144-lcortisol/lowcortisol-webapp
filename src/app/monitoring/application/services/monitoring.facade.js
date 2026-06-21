@@ -9,16 +9,40 @@ export class MonitoringFacade {
         return this.monitoringApiService.getSession();
     }
 
-    async getReadings(payload = {}) {
+    async getRecentReadings(payload = {}) {
         return this.monitoringApiService.getReadings(payload);
+    }
+
+    async getReadings(payload = {}) {
+        return this.getRecentReadings(payload);
+    }
+
+    async registerReading(payload) {
+        return this.monitoringApiService.registerReading(payload);
     }
 
     async createReading(payload) {
         return this.monitoringApiService.createReading(payload);
     }
 
-    async getAnomalies() {
+    async getActiveThresholds() {
+        return this.monitoringApiService.getActiveThresholds();
+    }
+
+    async createThreshold(payload) {
+        return this.monitoringApiService.createThreshold(payload);
+    }
+
+    async getOpenAnomalies() {
         return this.monitoringApiService.getAnomalies();
+    }
+
+    async getAnomalies() {
+        return this.getOpenAnomalies();
+    }
+
+    async resolveAnomaly(anomalyId) {
+        return this.monitoringApiService.resolveAnomaly(anomalyId);
     }
 
     async getReports() {
@@ -31,5 +55,9 @@ export class MonitoringFacade {
 
     async getSummary() {
         return this.monitoringApiService.getSummary();
+    }
+
+    async getPhysicalOptions() {
+        return this.monitoringApiService.getPhysicalOptions();
     }
 }

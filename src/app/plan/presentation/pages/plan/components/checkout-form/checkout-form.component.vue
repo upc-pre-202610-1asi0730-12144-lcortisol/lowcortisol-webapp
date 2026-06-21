@@ -287,7 +287,7 @@ function handleSubmit() {
   color: var(--color-text);
   font-size: clamp(2rem, 4vw, 2.6rem);
   font-weight: 900;
-  letter-spacing: -0.05em;
+  letter-spacing: 0;
   line-height: 1;
   margin: 0 0 10px;
 }
@@ -321,7 +321,7 @@ function handleSubmit() {
   color: var(--color-text);
   font-size: 32px;
   font-weight: 900;
-  letter-spacing: -0.06em;
+  letter-spacing: 0;
   line-height: 1;
 }
 
