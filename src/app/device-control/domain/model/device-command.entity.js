@@ -4,20 +4,40 @@ export class DeviceCommand extends BaseEntity {
     constructor({
                     id = null,
                     deviceId = "",
+                    valveId = "",
+                    siteId = "",
+                    roomId = "",
+                    deviceGroupId = "",
+                    incidentId = "",
                     commandType = "sync",
-                    payload = {},
+                    source = "manual",
+                    reason = "",
+                    requestedBy = "",
+                    requestedAt = null,
                     status = "pending",
                     executedAt = null,
+                    failureReason = "",
+                    payload = {},
                     createdAt = null,
                     updatedAt = null,
                 } = {}) {
         super({ id, createdAt, updatedAt });
 
         this.deviceId = deviceId;
+        this.valveId = valveId;
+        this.siteId = siteId;
+        this.roomId = roomId;
+        this.deviceGroupId = deviceGroupId;
+        this.incidentId = incidentId;
         this.commandType = commandType;
-        this.payload = payload;
+        this.source = source;
+        this.reason = reason;
+        this.requestedBy = requestedBy;
+        this.requestedAt = requestedAt ? new Date(requestedAt) : this.createdAt;
         this.status = status;
         this.executedAt = executedAt ? new Date(executedAt) : null;
+        this.failureReason = failureReason;
+        this.payload = payload;
     }
 
     markAsExecuted() {
@@ -26,9 +46,14 @@ export class DeviceCommand extends BaseEntity {
         this.updateTimestamp();
     }
 
-    markAsFailed() {
+    markAsFailed(failureReason = "") {
         this.status = "failed";
+        this.failureReason = failureReason;
         this.updateTimestamp();
+    }
+
+    get isLinkedToIncident() {
+        return Boolean(this.incidentId);
     }
 
     get statusLabel() {
