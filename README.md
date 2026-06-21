@@ -1,6 +1,6 @@
-# lowcortisol-webapp
+# LowCortisol Webapp
 
-This template should help get you started developing with Vue 3 in Vite.
+Frontend Vue 3 + JavaScript + Vite for LowCortisol.
 
 ## Recommended IDE Setup
 
@@ -30,6 +30,16 @@ npm install
 ```sh
 npm run dev
 ```
+
+Development expects the backend at:
+
+```env
+VITE_API_BASE_URL=http://localhost:5077
+```
+
+Workplace tries the real backend endpoints first. If the backend is not
+available, Workplace falls back to the local demo data service so the UI remains
+usable during development.
 
 ### Compile and Minify for Production
 
