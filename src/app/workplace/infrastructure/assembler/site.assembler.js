@@ -15,6 +15,8 @@ export class SiteAssembler extends BaseAssembler {
             gasConsumption: resource.gasConsumption,
             activeSensors: resource.activeSensors,
             activeIncidents: resource.activeIncidents,
+            latitude: resource.latitude,
+            longitude: resource.longitude,
             createdAt: resource.createdAt,
             updatedAt: resource.updatedAt,
         });
@@ -32,6 +34,8 @@ export class SiteAssembler extends BaseAssembler {
             gasConsumption: entity.gasConsumption,
             activeSensors: entity.activeSensors,
             activeIncidents: entity.activeIncidents,
+            latitude: entity.latitude,
+            longitude: entity.longitude,
             createdAt: entity.createdAt,
             updatedAt: entity.updatedAt,
         });
