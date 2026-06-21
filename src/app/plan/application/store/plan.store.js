@@ -17,6 +17,10 @@ const state = reactive({
         serviceRequest: 0,
         maxSites: 0,
         maxDevices: 0,
+        usedSites: 0,
+        usedDevices: 0,
+        remainingSites: 0,
+        remainingDevices: 0,
     },
     loading: false,
     error: null,
@@ -41,44 +45,68 @@ async function loadPlanPage() {
 }
 
 async function subscribeToPlan(planId) {
-    const subscription = await planFacade.subscribe({
-        userId: "USR-001",
-        workplaceId: "WORKPLACE-001",
-        planId,
-        paymentMethod: "card",
-    });
+    state.error = null;
+    state.message = "";
 
-    await loadPlanPage();
+    try {
+        const subscription = await planFacade.subscribe({
+            userId: "USR-001",
+            workplaceId: "WORKPLACE-001",
+            planId,
+            paymentMethod: "card",
+        });
 
-    state.message = "Suscripción creada correctamente.";
+        await loadPlanPage();
 
-    return subscription;
+        state.message = "Suscripcion creada correctamente.";
+
+        return subscription;
+    } catch (error) {
+        state.error = error.message || "No se pudo crear la suscripcion.";
+        throw error;
+    }
 }
 
 async function changePlan(planId) {
-    const subscription = await planFacade.changePlan({
-        subscriptionId: state.subscription?.id,
-        newPlanId: planId,
-    });
+    state.error = null;
+    state.message = "";
 
-    await loadPlanPage();
+    try {
+        const subscription = await planFacade.changePlan({
+            subscriptionId: state.subscription?.id,
+            newPlanId: planId,
+        });
 
-    state.message = "Plan actualizado correctamente.";
+        await loadPlanPage();
 
-    return subscription;
+        state.message = "Plan actualizado correctamente.";
+
+        return subscription;
+    } catch (error) {
+        state.error = error.message || "No se pudo cambiar el plan.";
+        throw error;
+    }
 }
 
 async function cancelSubscription() {
-    const subscription = await planFacade.cancelSubscription({
-        subscriptionId: state.subscription?.id,
-        reason: "Cancelación solicitada desde la vista de planes.",
-    });
+    state.error = null;
+    state.message = "";
 
-    await loadPlanPage();
+    try {
+        const subscription = await planFacade.cancelSubscription({
+            subscriptionId: state.subscription?.id,
+            reason: "Cancelacion solicitada desde la vista de planes.",
+        });
 
-    state.message = "Suscripción cancelada correctamente.";
+        await loadPlanPage();
 
-    return subscription;
+        state.message = "Suscripcion cancelada correctamente.";
+
+        return subscription;
+    } catch (error) {
+        state.error = error.message || "No se pudo cancelar la suscripcion.";
+        throw error;
+    }
 }
 
 function getActivePlan() {
