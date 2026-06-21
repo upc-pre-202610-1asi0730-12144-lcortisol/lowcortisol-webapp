@@ -6,7 +6,10 @@
   >
     <div>
       <h3>{{ device.name }}</h3>
-      <p>{{ getDeviceTypeLabel(device.type) }} · {{ device.siteId }}</p>
+      <p>
+        {{ getDeviceTypeLabel(device.type) }}
+        <span v-if="device.physicalPath"> - {{ device.physicalPath }}</span>
+      </p>
     </div>
 
     <span class="badge" :class="device.isOnline ? 'badge-success' : 'badge-warning'">

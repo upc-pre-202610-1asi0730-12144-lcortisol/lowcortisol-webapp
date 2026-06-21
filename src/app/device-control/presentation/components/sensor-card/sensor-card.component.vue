@@ -25,11 +25,11 @@ const { t } = useTranslation();
 
 function getResourceLabel(resourceType) {
   const keys = {
-    water: "deviceControl.resource.water",
-    gas: "deviceControl.resource.gas",
+    water: "deviceControl.resources.water",
+    gas: "deviceControl.resources.gas",
   };
 
-  return t(keys[resourceType] ?? "deviceControl.resource.water");
+  return t(keys[resourceType] ?? "deviceControl.resources.water");
 }
 </script>
 
