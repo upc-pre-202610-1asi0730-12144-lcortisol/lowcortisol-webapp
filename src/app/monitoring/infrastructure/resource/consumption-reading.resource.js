@@ -5,11 +5,16 @@ export class ConsumptionReadingResource extends BaseResource {
                     id = null,
                     sessionId = "",
                     siteId = "",
+                    roomId = "",
+                    deviceGroupId = "",
+                    deviceId = "",
                     sensorId = "",
                     resourceType = "water",
                     value = 0,
                     unit = "L",
-                    recordedAt = new Date(),
+                    capturedAt = null,
+                    recordedAt = null,
+                    location = null,
                     status = "normal",
                     createdAt = null,
                     updatedAt = null,
@@ -18,11 +23,16 @@ export class ConsumptionReadingResource extends BaseResource {
 
         this.sessionId = sessionId;
         this.siteId = siteId;
+        this.roomId = roomId;
+        this.deviceGroupId = deviceGroupId;
+        this.deviceId = deviceId;
         this.sensorId = sensorId;
         this.resourceType = resourceType;
-        this.value = value;
+        this.value = Number(value || 0);
         this.unit = unit;
-        this.recordedAt = recordedAt;
+        this.capturedAt = capturedAt || recordedAt;
+        this.recordedAt = this.capturedAt;
+        this.location = location;
         this.status = status;
     }
 }
