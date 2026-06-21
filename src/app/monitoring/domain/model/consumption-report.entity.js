@@ -3,6 +3,7 @@ import { BaseEntity } from "../../../shared/domain/model/base.entity";
 export class ConsumptionReport extends BaseEntity {
     constructor({
                     id = null,
+                    title = "",
                     siteId = "",
                     period = "monthly",
                     startDate = null,
@@ -16,6 +17,7 @@ export class ConsumptionReport extends BaseEntity {
                 } = {}) {
         super({ id, createdAt, updatedAt });
 
+        this.title = title;
         this.siteId = siteId;
         this.period = period;
         this.startDate = startDate ? new Date(startDate) : null;

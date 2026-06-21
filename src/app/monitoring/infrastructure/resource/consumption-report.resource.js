@@ -3,6 +3,7 @@ import { BaseResource } from "../../../shared/infrastructure/resource/base.resou
 export class ConsumptionReportResource extends BaseResource {
     constructor({
                     id = null,
+                    title = "",
                     siteId = "",
                     period = "monthly",
                     startDate = null,
@@ -16,6 +17,7 @@ export class ConsumptionReportResource extends BaseResource {
                 } = {}) {
         super({ id, createdAt, updatedAt });
 
+        this.title = title;
         this.siteId = siteId;
         this.period = period;
         this.startDate = startDate;
