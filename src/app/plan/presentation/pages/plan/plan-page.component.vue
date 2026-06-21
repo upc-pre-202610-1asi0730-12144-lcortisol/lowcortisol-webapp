@@ -45,12 +45,30 @@
 
         <UiCard :title="t('plans.page.capacity')">
           <strong class="summary-value">
-            {{ state.summary.maxSites || 0 }}
+            {{ state.summary.usedSites || 0 }} / {{ state.summary.maxSites || 0 }}
           </strong>
 
           <p class="summary-label">
-            {{ t("plans.page.allowedSites") }}
+            Sedes usadas del plan
           </p>
+
+          <div class="capacity-bar" aria-hidden="true">
+            <span :style="{ width: getCapacityPercent(state.summary.usedSites, state.summary.maxSites) + '%' }"></span>
+          </div>
+        </UiCard>
+
+        <UiCard :title="t('plans.page.deviceCapacity')">
+          <strong class="summary-value">
+            {{ state.summary.usedDevices || 0 }} / {{ state.summary.maxDevices || 0 }}
+          </strong>
+
+          <p class="summary-label">
+            Dispositivos usados del plan
+          </p>
+
+          <div class="capacity-bar" aria-hidden="true">
+            <span :style="{ width: getCapacityPercent(state.summary.usedDevices, state.summary.maxDevices) + '%' }"></span>
+          </div>
         </UiCard>
 
         <UiCard :title="t('plans.page.payments')">
@@ -60,6 +78,16 @@
 
           <p class="summary-label">
             {{ t("plans.page.totalPaid") }}
+          </p>
+        </UiCard>
+
+        <UiCard :title="t('plans.page.serviceRequests')">
+          <strong class="summary-value">
+            {{ state.summary.serviceRequest || 0 }}
+          </strong>
+
+          <p class="summary-label">
+            {{ t("plans.page.registeredRequests") }}
           </p>
         </UiCard>
       </section>
@@ -74,29 +102,37 @@
             'plan-card-active': state.subscription?.planId === plan.id
           }"
         >
-          <span
-              v-if="plan.recommended"
-              class="plan-badge"
-          >
-            {{ t("plans.page.recommended") }}
-          </span>
-
           <div class="plan-header">
-            <div>
+            <div class="plan-title-block">
+              <span
+                  v-if="plan.recommended"
+                  class="plan-badge"
+              >
+                {{ t("plans.page.recommended") }}
+              </span>
+
               <h2>{{ plan.name }}</h2>
               <p>{{ plan.description }}</p>
             </div>
 
-            <div class="plan-price">
-              S/ {{ Number(plan.price || 0).toFixed(2) }}
-              <span>{{ t("plans.page.monthly") }}</span>
+            <div class="plan-price-card">
+              <span class="plan-currency">S/</span>
+              <strong>{{ Number(plan.price || 0).toFixed(2) }}</strong>
+              <small>{{ t("plans.page.monthly") }}</small>
             </div>
           </div>
 
-          <p class="plan-capacity">
-            {{ plan.maxSites }} {{ t("plans.page.sites") }} ·
-            {{ plan.maxDevices }} {{ t("plans.page.devices") }}
-          </p>
+          <div class="plan-capacity-grid">
+            <span>
+              <strong>{{ plan.maxSites }}</strong>
+              <small>{{ t("plans.page.sites") }}</small>
+            </span>
+
+            <span>
+              <strong>{{ plan.maxDevices }}</strong>
+              <small>{{ t("plans.page.devices") }}</small>
+            </span>
+          </div>
 
           <ul class="plan-features">
             <li
@@ -285,13 +321,17 @@ async function handleCheckoutSubmit() {
     return;
   }
 
-  if (state.subscription?.id) {
-    await changePlan(selectedPlan.value.id);
-  } else {
-    await subscribeToPlan(selectedPlan.value.id);
-  }
+  try {
+    if (state.subscription?.id) {
+      await changePlan(selectedPlan.value.id);
+    } else {
+      await subscribeToPlan(selectedPlan.value.id);
+    }
 
-  closeCheckout();
+    closeCheckout();
+  } catch {
+    // El store ya expone el mensaje visible en la pagina de planes.
+  }
 }
 
 async function handleCancelSubscription() {
@@ -348,6 +388,16 @@ function getRequestStatusLabel(status) {
 
   return labels[status] || status;
 }
+
+function getCapacityPercent(used, limit) {
+  const normalizedLimit = Number(limit || 0);
+
+  if (normalizedLimit <= 0) {
+    return 0;
+  }
+
+  return Math.min(100, Math.round((Number(used || 0) / normalizedLimit) * 100));
+}
 </script>
 
 <style scoped>
@@ -357,7 +407,7 @@ function getRequestStatusLabel(status) {
 }
 
 .plans-page {
-  width: min(var(--page-max-width), calc(100% - 32px));
+  width: min(1200px, calc(100% - 32px));
   margin: 0 auto;
   display: grid;
   gap: 28px;
@@ -380,7 +430,7 @@ function getRequestStatusLabel(status) {
 .page-header h1 {
   font-size: clamp(2rem, 5vw, 3rem);
   font-weight: 900;
-  letter-spacing: -0.04em;
+  letter-spacing: 0;
   line-height: 1;
   margin: 0 0 8px;
 }
@@ -418,7 +468,7 @@ function getRequestStatusLabel(status) {
   color: var(--color-text);
   font-size: 32px;
   font-weight: 900;
-  letter-spacing: -0.05em;
+  letter-spacing: 0;
   line-height: 1;
   margin-top: 8px;
 }
@@ -430,6 +480,22 @@ function getRequestStatusLabel(status) {
   margin: 8px 0 0;
 }
 
+.capacity-bar {
+  height: 10px;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-soft);
+  margin-top: 14px;
+}
+
+.capacity-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-success));
+  transition: width 0.22s ease;
+}
+
 .plans-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -439,19 +505,22 @@ function getRequestStatusLabel(status) {
 
 .plan-card {
   position: relative;
-  display: flex;
-  flex-direction: column;
-  min-height: 420px;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  gap: 22px;
+  min-height: 470px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 24px;
-  padding: 28px;
+  padding: 26px;
   box-shadow: 0 18px 48px rgba(15, 23, 42, 0.08);
   overflow: hidden;
 }
 
 .plan-card-popular {
-  background: #eaf4ff;
+  background:
+      linear-gradient(180deg, rgba(47, 128, 237, 0.12), rgba(255, 255, 255, 0.88)),
+      #ffffff;
   border: 2px solid var(--color-primary);
 }
 
@@ -470,28 +539,29 @@ function getRequestStatusLabel(status) {
   font-size: 12px;
   font-weight: 900;
   line-height: 1;
-  letter-spacing: -0.02em;
-  margin-bottom: 14px;
+  letter-spacing: 0;
 }
 
 .plan-header {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
   gap: 18px;
-  align-items: flex-start;
+}
+
+.plan-title-block {
+  display: grid;
+  gap: 12px;
 }
 
 .plan-header h2 {
   color: var(--color-text);
-  font-size: 28px;
+  font-size: clamp(1.6rem, 2vw, 2rem);
   font-weight: 900;
-  letter-spacing: -0.04em;
-  line-height: 1;
-  margin: 0 0 12px;
+  letter-spacing: 0;
+  line-height: 1.05;
+  margin: 0;
 }
 
 .plan-header p {
-  max-width: 170px;
   color: var(--color-text-muted);
   font-size: 15px;
   font-weight: 500;
@@ -499,64 +569,108 @@ function getRequestStatusLabel(status) {
   margin: 0;
 }
 
-.plan-price {
-  min-width: 115px;
+.plan-price-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: end;
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.72);
+  padding: 16px;
   color: var(--color-text);
-  text-align: right;
-  font-size: 32px;
+}
+
+.plan-currency {
+  align-self: center;
+  font-size: 18px;
   font-weight: 900;
-  letter-spacing: -0.06em;
+}
+
+.plan-price-card strong {
+  min-width: 0;
+  overflow: hidden;
+  font-size: clamp(1.8rem, 3vw, 2.35rem);
+  font-weight: 900;
+  letter-spacing: 0;
   line-height: 0.9;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.plan-price span {
-  display: block;
-  margin-top: 4px;
+.plan-price-card small {
   color: var(--color-text-muted);
   font-size: 14px;
   font-weight: 900;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
   line-height: 1;
 }
 
-.plan-capacity {
-  color: var(--color-text-muted);
-  font-size: 14px;
+.plan-capacity-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.plan-capacity-grid span {
+  display: grid;
+  gap: 4px;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-surface-soft);
+  padding: 14px;
+}
+
+.plan-capacity-grid strong {
+  color: var(--color-text);
+  font-size: 22px;
   font-weight: 900;
-  letter-spacing: -0.01em;
-  margin: 32px 0 28px;
+  line-height: 1;
+}
+
+.plan-capacity-grid small {
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .plan-features {
   display: grid;
-  gap: 14px;
+  align-content: start;
+  gap: 12px;
   list-style: none;
   padding: 0;
-  margin: 0 0 28px;
+  margin: 0;
 }
 
 .plan-features li {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
   color: var(--color-text);
   font-size: 14px;
   font-weight: 900;
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
+  line-height: 1.35;
 }
 
 .plan-features li::before {
-  content: "✓";
+  content: "\2713";
   color: var(--color-success);
-  margin-right: 10px;
+  font-weight: 900;
 }
 
 .plan-action {
   width: 100%;
-  margin-top: auto;
   border-radius: 14px;
   padding: 16px 18px;
   font-size: 14px;
   font-weight: 900;
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
 }
 
 .details-grid {
@@ -631,16 +745,15 @@ function getRequestStatusLabel(status) {
     flex-direction: column;
   }
 
-  .plan-header {
-    flex-direction: column;
+  .plan-card {
+    min-height: auto;
   }
+}
 
-  .plan-header p {
-    max-width: none;
-  }
-
-  .plan-price {
-    text-align: left;
+@media (max-width: 560px) {
+  .plan-price-card,
+  .plan-capacity-grid {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -648,7 +761,7 @@ function getRequestStatusLabel(status) {
   font-family: var(--font-main);
   font-size: 16px;
   font-weight: 900;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
   line-height: 1;
   border-radius: 14px;
   padding: 16px 18px;

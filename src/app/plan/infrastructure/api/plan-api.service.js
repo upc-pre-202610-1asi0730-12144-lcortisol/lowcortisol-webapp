@@ -1,29 +1,74 @@
-import { ApiClientService } from "../../../shared/infrastructure/http/api-client.service";
 import { AuthSessionService } from "../../../shared/application/services/auth-session.service";
+import { LocalPlatformDataService } from "../../../shared/infrastructure/data/local-platform-data.service";
 
 function getCurrentUserId() {
     const user = AuthSessionService.getCurrentUser();
 
     if (!user) {
-        throw new Error("No hay sesión activa.");
+        throw new Error("No hay sesion activa.");
     }
 
     return user.id;
 }
 
+function getPlan(planId) {
+    const plan = LocalPlatformDataService.getById("plans", planId);
+
+    if (!plan) {
+        throw new Error("No se encontro el plan solicitado.");
+    }
+
+    return plan;
+}
+
+function getOperationalUsage() {
+    const sites = LocalPlatformDataService
+        .list("sites")
+        .filter((site) => site.status !== "deleted");
+    const devices = LocalPlatformDataService
+        .list("devices")
+        .filter((device) => device.status !== "deleted");
+    const sensors = LocalPlatformDataService
+        .list("sensors")
+        .filter((sensor) => sensor.status !== "deleted");
+    const valves = LocalPlatformDataService
+        .list("valves")
+        .filter((valve) => valve.status !== "deleted");
+
+    return {
+        sites: sites.length,
+        devices: devices.length + sensors.length + valves.length,
+    };
+}
+
+function assertPlanCoversUsage(plan) {
+    const usage = getOperationalUsage();
+
+    if (Number(plan.maxSites || 0) > 0 && usage.sites > Number(plan.maxSites || 0)) {
+        throw new Error(
+            `No puedes usar ${plan.name}: tienes ${usage.sites} sede(s) y el plan permite ${plan.maxSites}.`
+        );
+    }
+
+    if (Number(plan.maxDevices || 0) > 0 && usage.devices > Number(plan.maxDevices || 0)) {
+        throw new Error(
+            `No puedes usar ${plan.name}: tienes ${usage.devices} dispositivo(s) y el plan permite ${plan.maxDevices}.`
+        );
+    }
+}
+
 export class PlanApiService {
     async getPlans() {
-        return ApiClientService.get("/plans");
+        return LocalPlatformDataService.list("plans");
     }
 
     async getPlanById(planId) {
-        return ApiClientService.get(`/plans/${planId}`);
+        return getPlan(planId);
     }
 
     async getActiveSubscription() {
         const userId = getCurrentUserId();
-
-        const subscriptions = await ApiClientService.get("/subscriptions", {
+        const subscriptions = LocalPlatformDataService.list("subscriptions", {
             userId,
             status: "active",
         });
@@ -31,93 +76,93 @@ export class PlanApiService {
         return subscriptions[0] || null;
     }
 
-    async subscribe(payload) {
+    async subscribe(subscriptionRequest) {
         const userId = getCurrentUserId();
-        const plan = await this.getPlanById(payload.planId);
+        const plan = getPlan(subscriptionRequest.planId);
 
-        const subscription = await ApiClientService.post("/subscriptions", {
+        assertPlanCoversUsage(plan);
+
+        const subscription = LocalPlatformDataService.create("subscriptions", {
             userId,
-            workplaceId: payload.workplaceId || "WORKPLACE-001",
-            planId: payload.planId,
+            workplaceId: subscriptionRequest.workplaceId || "WORKPLACE-001",
+            planId: subscriptionRequest.planId,
             status: "active",
             startedAt: new Date().toISOString(),
             expiresAt: null,
             autoRenew: true,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
         });
 
-        await ApiClientService.post("/payments", {
+        LocalPlatformDataService.create("payments", {
             subscriptionId: subscription.id,
             amount: plan.price,
             currency: plan.currency || "PEN",
-            method: payload.paymentMethod || "card",
+            method: subscriptionRequest.paymentMethod || "card",
             status: "paid",
             paidAt: new Date().toISOString(),
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
         });
 
         return subscription;
     }
 
-    async changePlan(payload) {
+    async changePlan(planChange) {
         const activeSubscription = await this.getActiveSubscription();
 
         if (!activeSubscription) {
-            throw new Error("No tienes una suscripción activa.");
+            throw new Error("No tienes una suscripcion activa.");
         }
 
-        const plan = await this.getPlanById(payload.newPlanId);
+        const plan = getPlan(planChange.newPlanId);
 
-        const updatedSubscription = await ApiClientService.patch(`/subscriptions/${activeSubscription.id}`, {
-            planId: payload.newPlanId,
-            updatedAt: new Date().toISOString(),
-        });
+        assertPlanCoversUsage(plan);
 
-        await ApiClientService.post("/payments", {
+        const updatedSubscription = LocalPlatformDataService.update(
+            "subscriptions",
+            activeSubscription.id,
+            {
+                planId: planChange.newPlanId,
+            }
+        );
+
+        LocalPlatformDataService.create("payments", {
             subscriptionId: activeSubscription.id,
             amount: plan.price,
             currency: plan.currency || "PEN",
             method: "card",
             status: "paid",
             paidAt: new Date().toISOString(),
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
         });
 
-        await ApiClientService.post("/serviceRequests", {
+        LocalPlatformDataService.create("serviceRequests", {
             subscriptionId: activeSubscription.id,
             type: "change-plan",
             description: `Cambio solicitado al plan ${plan.name}.`,
             status: "resolved",
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
         });
 
         return updatedSubscription;
     }
 
-    async cancelSubscription(payload = {}) {
+    async cancelSubscription(cancellation = {}) {
         const activeSubscription = await this.getActiveSubscription();
 
         if (!activeSubscription) {
-            throw new Error("No tienes una suscripción activa.");
+            throw new Error("No tienes una suscripcion activa.");
         }
 
-        const cancelledSubscription = await ApiClientService.patch(`/subscriptions/${activeSubscription.id}`, {
-            status: "cancelled",
-            autoRenew: false,
-            updatedAt: new Date().toISOString(),
-        });
+        const cancelledSubscription = LocalPlatformDataService.update(
+            "subscriptions",
+            activeSubscription.id,
+            {
+                status: "cancelled",
+                autoRenew: false,
+            }
+        );
 
-        await ApiClientService.post("/serviceRequests", {
+        LocalPlatformDataService.create("serviceRequests", {
             subscriptionId: activeSubscription.id,
             type: "cancellation",
-            description: payload.reason || "Cancelación solicitada por el usuario.",
+            description: cancellation.reason || "Cancelacion solicitada por el usuario.",
             status: "open",
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
         });
 
         return cancelledSubscription;
@@ -125,39 +170,37 @@ export class PlanApiService {
 
     async getPayments() {
         const userId = getCurrentUserId();
-
-        const subscriptions = await ApiClientService.get("/subscriptions", {
+        const subscriptions = LocalPlatformDataService.list("subscriptions", {
             userId,
         });
-
         const subscriptionIds = subscriptions.map((subscription) => subscription.id);
-        const payments = await ApiClientService.get("/payments");
 
-        return payments.filter((payment) => subscriptionIds.includes(payment.subscriptionId));
+        return LocalPlatformDataService.list("payments").filter((payment) =>
+            subscriptionIds.includes(payment.subscriptionId)
+        );
     }
 
     async getServiceRequest() {
         const userId = getCurrentUserId();
-
-        const subscriptions = await ApiClientService.get("/subscriptions", {
+        const subscriptions = LocalPlatformDataService.list("subscriptions", {
             userId,
         });
-
         const subscriptionIds = subscriptions.map((subscription) => subscription.id);
-        const request = await ApiClientService.get("/serviceRequests");
 
-        return request.filter((request) => subscriptionIds.includes(request.subscriptionId));
+        return LocalPlatformDataService.list("serviceRequests").filter((request) =>
+            subscriptionIds.includes(request.subscriptionId)
+        );
     }
 
     async getSummary() {
         const plans = await this.getPlans();
         const subscription = await this.getActiveSubscription();
         const payments = await this.getPayments();
-        const serviceRequest = await this.getServiceRequest();
-
+        const serviceRequests = await this.getServiceRequest();
         const activePlan = subscription
             ? plans.find((plan) => plan.id === subscription.planId)
             : null;
+        const usage = getOperationalUsage();
 
         return {
             totalPlans: plans.length,
@@ -165,9 +208,13 @@ export class PlanApiService {
             subscriptionStatus: subscription?.status || "inactive",
             totalPayments: payments.length,
             totalPaid: payments.reduce((total, payment) => total + Number(payment.amount || 0), 0),
-            serviceRequest: serviceRequest.length,
+            serviceRequest: serviceRequests.length,
             maxSites: activePlan?.maxSites || 0,
             maxDevices: activePlan?.maxDevices || 0,
+            usedSites: usage.sites,
+            usedDevices: usage.devices,
+            remainingSites: Math.max(0, Number(activePlan?.maxSites || 0) - usage.sites),
+            remainingDevices: Math.max(0, Number(activePlan?.maxDevices || 0) - usage.devices),
         };
     }
 }
